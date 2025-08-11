@@ -3,6 +3,8 @@ package com.mycompany.courseregistrationsystem.app;
 import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -12,6 +14,10 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.border.EmptyBorder;
+
+import com.mycompany.courseregistrationsystem.view.swing.StudentSwingView;
+import com.mycompany.courseregistrationsystem.view.swing.CourseSwingView;
+
 
 public class CourseRegistrationApp extends JFrame {
 
@@ -32,7 +38,7 @@ public class CourseRegistrationApp extends JFrame {
     public CourseRegistrationApp() {
         setTitle("Course Registration System");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setBounds(100, 100, 520, 300);
+        setBounds(100, 100, 560, 320);
 
         contentPane = new JPanel();
         contentPane.setBorder(new EmptyBorder(12, 12, 12, 12));
@@ -41,11 +47,11 @@ public class CourseRegistrationApp extends JFrame {
         JLabel lblTitle = new JLabel("Course Registration System");
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
 
-        JButton btnStudent = new JButton("Student Screen");
-        btnStudent.addActionListener(this::openStudentScreen);
+        JButton btnStudentPortal = new JButton("Student's Portal");
+        btnStudentPortal.addActionListener(this::openStudentPortal);
 
-        JButton btnCourse = new JButton("Course Screen");
-        btnCourse.addActionListener(this::openCourseScreen);
+        JButton btnProfessorPortal = new JButton("Professor's Portal");
+        btnProfessorPortal.addActionListener(this::openProfessorPortal);
 
         GroupLayout gl_contentPane = new GroupLayout(contentPane);
         gl_contentPane.setHorizontalGroup(
@@ -56,9 +62,9 @@ public class CourseRegistrationApp extends JFrame {
                     .addContainerGap(10, Short.MAX_VALUE))
                 .addGroup(gl_contentPane.createSequentialGroup()
                     .addGap(40)
-                    .addComponent(btnStudent, GroupLayout.PREFERRED_SIZE, 180, GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnStudentPortal, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE)
                     .addPreferredGap(ComponentPlacement.RELATED, 40, Short.MAX_VALUE)
-                    .addComponent(btnCourse, GroupLayout.PREFERRED_SIZE, 180, GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnProfessorPortal, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE)
                     .addGap(40))
         );
         gl_contentPane.setVerticalGroup(
@@ -68,38 +74,49 @@ public class CourseRegistrationApp extends JFrame {
                     .addComponent(lblTitle)
                     .addGap(40)
                     .addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE)
-                        .addComponent(btnStudent, GroupLayout.PREFERRED_SIZE, 36, GroupLayout.PREFERRED_SIZE)
-                        .addComponent(btnCourse, GroupLayout.PREFERRED_SIZE, 36, GroupLayout.PREFERRED_SIZE))
+                        .addComponent(btnStudentPortal, GroupLayout.PREFERRED_SIZE, 36, GroupLayout.PREFERRED_SIZE)
+                        .addComponent(btnProfessorPortal, GroupLayout.PREFERRED_SIZE, 36, GroupLayout.PREFERRED_SIZE))
                     .addContainerGap(120, Short.MAX_VALUE))
         );
         contentPane.setLayout(gl_contentPane);
     }
 
-    private void openStudentScreen(ActionEvent e) {
-        
-        new StudentFrame().setVisible(true);
+    private void openStudentPortal(ActionEvent e) {
+
+        setEnabled(false);
+
+        StudentSwingView studentView = new StudentSwingView();
+
+        studentView.setTitle("Student's Portal");
+
+
+        studentView.addWindowListener(new WindowAdapter() {
+            @Override public void windowClosed(WindowEvent we)  { reenableMain(); }
+            @Override public void windowClosing(WindowEvent we) { reenableMain(); }
+        });
+
+        studentView.setVisible(true);
     }
 
-    private void openCourseScreen(ActionEvent e) {
-      
-        new CourseFrame().setVisible(true);
+    private void openProfessorPortal(ActionEvent e) {
+    	
+        setEnabled(false);
+
+        CourseSwingView courseView = new CourseSwingView();
+
+        courseView.setTitle("Professor's Portal");
+
+        courseView.addWindowListener(new WindowAdapter() {
+            @Override public void windowClosed(WindowEvent we)  { reenableMain(); }
+            @Override public void windowClosing(WindowEvent we) { reenableMain(); }
+        });
+
+        courseView.setVisible(true);
     }
 
-    private static class StudentFrame extends JFrame {
-        private static final long serialVersionUID = 1L;
-        StudentFrame() {
-            setTitle("Students");
-            setBounds(150, 150, 600, 400);
-            setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        }
-    }
-
-    private static class CourseFrame extends JFrame {
-        private static final long serialVersionUID = 1L;
-        CourseFrame() {
-            setTitle("Courses");
-            setBounds(170, 170, 600, 400);
-            setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        }
+    private void reenableMain() {
+        setEnabled(true);
+        toFront();
+        requestFocus();
     }
 }
