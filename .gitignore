@@ -3,4 +3,4 @@
 
 /.metadata/
 
-com.mycompany.courseregistrationsystem/src/main/resources/META-INF/persistence.xml
+courseregistrationsystem/src/main/resources/META-INF/persistence.xml
