@@ -1,5 +1,8 @@
 package com.mycompany.courseregistrationsystem.view.swing;
 
+import com.mycompany.courseregistrationsystem.controller.CourseController;
+import com.mycompany.courseregistrationsystem.model.Course;
+
 import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
@@ -20,6 +23,7 @@ import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.JOptionPane;
 
 
 public class CourseSwingView extends JFrame {
@@ -36,8 +40,7 @@ public class CourseSwingView extends JFrame {
     private JTable tblCourses;
     private DefaultTableModel tableModel;
 
-
-    private long nextId = 1;
+    private final CourseController controller = new CourseController();
 
     public static void main(String[] args) {
         EventQueue.invokeLater(() -> {
@@ -92,10 +95,8 @@ public class CourseSwingView extends JFrame {
                 if (row >= 0) {
                     txtCode.setText(val(row, 1));
                     txtTitle.setText(val(row, 2));
-
                     spnCfu.setValue(parseInt(val(row, 3), 6));
                     spnMaxSeats.setValue(parseInt(val(row, 4), 50));
-
                 }
             }
         });
@@ -113,6 +114,8 @@ public class CourseSwingView extends JFrame {
         JButton btnClear  = new JButton("Clear");
         btnClear.addActionListener(e -> clearForm());
 
+        JButton btnRefresh = new JButton("Refresh");
+        btnRefresh.addActionListener(e -> refreshTable());
 
         GroupLayout gl = new GroupLayout(contentPane);
         gl.setHorizontalGroup(
@@ -143,7 +146,8 @@ public class CourseSwingView extends JFrame {
                       .addComponent(btnAdd, GroupLayout.DEFAULT_SIZE, 120, Short.MAX_VALUE)
                       .addComponent(btnUpdate, GroupLayout.DEFAULT_SIZE, 120, Short.MAX_VALUE)
                       .addComponent(btnDelete, GroupLayout.DEFAULT_SIZE, 120, Short.MAX_VALUE)
-                      .addComponent(btnClear, GroupLayout.DEFAULT_SIZE, 120, Short.MAX_VALUE)))
+                      .addComponent(btnClear, GroupLayout.DEFAULT_SIZE, 120, Short.MAX_VALUE)
+                      .addComponent(btnRefresh, GroupLayout.DEFAULT_SIZE, 120, Short.MAX_VALUE)))
                   .addComponent(scrollPane, GroupLayout.PREFERRED_SIZE, 920, GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -170,10 +174,19 @@ public class CourseSwingView extends JFrame {
                   .addComponent(btnDelete))
                 .addPreferredGap(ComponentPlacement.UNRELATED)
                 .addComponent(btnClear)
-                .addGap(18)
-                .addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 320, Short.MAX_VALUE))
+                .addPreferredGap(ComponentPlacement.UNRELATED)
+                .addComponent(btnRefresh)
+                .addGap(12)
+                .addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 300, Short.MAX_VALUE))
         );
         contentPane.setLayout(gl);
+
+        // Load from DB on window open
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override public void windowOpened(java.awt.event.WindowEvent e) {
+                refreshTable();
+            }
+        });
     }
 
 
@@ -182,29 +195,81 @@ public class CourseSwingView extends JFrame {
         String title = txtTitle.getText().trim();
         int cfu      = (Integer) spnCfu.getValue();
         int max      = (Integer) spnMaxSeats.getValue();
-        if (code.isEmpty() || title.isEmpty()) return;
 
-
-        tableModel.addRow(new Object[] { nextId++, code, title, cfu, max, 0 });
-        clearForm();
+        try {
+            controller.add(code, title, cfu, max);
+            clearForm();
+            refreshTable();
+            info("Course added.");
+        } catch (IllegalArgumentException ex) {
+            warn(ex.getMessage());
+        } catch (Exception ex) {
+            error("Failed to add course: " + ex.getMessage());
+        }
     }
 
     private void onUpdate(ActionEvent e) {
         int row = tblCourses.getSelectedRow();
-        if (row < 0) return;
+        if (row < 0) { warn("Select a row to update."); return; }
 
-        tableModel.setValueAt(txtCode.getText().trim(), row, 1);
-        tableModel.setValueAt(txtTitle.getText().trim(), row, 2);
-        tableModel.setValueAt(spnCfu.getValue(), row, 3);
-        tableModel.setValueAt(spnMaxSeats.getValue(), row, 4);
-        clearForm();
+        Long id   = parseLong(val(row, 0), null);
+        String code  = txtCode.getText().trim();
+        String title = txtTitle.getText().trim();
+        int cfu      = (Integer) spnCfu.getValue();
+        int max      = (Integer) spnMaxSeats.getValue();
+
+        if (id == null) { warn("Invalid row selected."); return; }
+
+        try {
+            controller.update(id, code, title, cfu, max);
+            clearForm();
+            refreshTable();
+            info("Course updated.");
+        } catch (IllegalArgumentException ex) {
+            warn(ex.getMessage());
+        } catch (Exception ex) {
+            error("Failed to update course: " + ex.getMessage());
+        }
     }
 
     private void onDelete(ActionEvent e) {
         int row = tblCourses.getSelectedRow();
-        if (row < 0) return;
-        tableModel.removeRow(row);
-        clearForm();
+        if (row < 0) { warn("Select a row to delete."); return; }
+
+        Long id = parseLong(val(row, 0), null);
+        if (id == null) { warn("Invalid row selected."); return; }
+
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Delete selected course?", "Confirm", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) return;
+
+        try {
+            controller.delete(id);
+            clearForm();
+            refreshTable();
+            info("Course deleted.");
+        } catch (Exception ex) {
+            error("Failed to delete course: " + ex.getMessage());
+        }
+    }
+
+    private void refreshTable() {
+        tableModel.setRowCount(0);
+        for (Course c : controller.loadAll()) {
+            int enrolled = 0;
+            try {
+                enrolled = controller.enrolledCount(c.getId());
+            } catch (Exception ignore) { }
+            tableModel.addRow(new Object[] {
+                c.getId(),
+                c.getCode(),
+                c.getTitle(),
+                c.getCfu(),
+                c.getMaxSeats(),
+                enrolled
+            });
+        }
+        tblCourses.clearSelection();
     }
 
     private void clearForm() {
@@ -222,6 +287,20 @@ public class CourseSwingView extends JFrame {
 
     private int parseInt(String s, int def) {
         try { return Integer.parseInt(s.trim()); } catch (Exception e) { return def; }
+    }
+
+    private Long parseLong(String s, Long def) {
+        try { return Long.valueOf(s.trim()); } catch (Exception e) { return def; }
+    }
+
+    private void warn(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Warning", JOptionPane.WARNING_MESSAGE);
+    }
+    private void info(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Info", JOptionPane.INFORMATION_MESSAGE);
+    }
+    private void error(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     public JTextField getTxtCode() { return txtCode; }
