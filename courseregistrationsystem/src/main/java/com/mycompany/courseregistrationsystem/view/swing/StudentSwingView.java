@@ -39,7 +39,7 @@ public class StudentSwingView extends JFrame {
         contentPane.setBorder(new EmptyBorder(10, 10, 10, 10));
         setContentPane(contentPane);
 
-        // ===== Top form (NORTH) =====
+
         JPanel panelForm = new JPanel(new GridBagLayout());
         GridBagConstraints gc = new GridBagConstraints();
         gc.insets = new Insets(6, 6, 6, 6);
@@ -77,7 +77,7 @@ public class StudentSwingView extends JFrame {
 
         contentPane.add(panelForm, BorderLayout.NORTH);
 
-        // ===== Table (CENTER) =====
+
         tableStudents = new JTable();
         tableStudents.setModel(new DefaultTableModel(
                 new Object[][]{},
@@ -90,7 +90,7 @@ public class StudentSwingView extends JFrame {
         JScrollPane scroll = new JScrollPane(tableStudents);
         contentPane.add(scroll, BorderLayout.CENTER);
 
-        // ===== Buttons (SOUTH) =====
+
         JPanel panelButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
         JButton btnAdd = new JButton("Add");
         JButton btnUpdate = new JButton("Update");
@@ -104,7 +104,7 @@ public class StudentSwingView extends JFrame {
         panelButtons.add(btnRefresh);
         contentPane.add(panelButtons, BorderLayout.SOUTH);
 
-        // ===== Listeners =====
+
         btnAdd.addActionListener(this::addStudent);
         btnUpdate.addActionListener(this::updateStudent);
         btnDelete.addActionListener(this::deleteStudent);
@@ -122,12 +122,12 @@ public class StudentSwingView extends JFrame {
             }
         });
 
-        // Initial data
+
         refreshCourses();
         loadStudents();
     }
 
-    // ---------- Data loading ----------
+
 
     private void refreshCourses() {
         DefaultComboBoxModel<Course> model = new DefaultComboBoxModel<>();
@@ -141,7 +141,7 @@ public class StudentSwingView extends JFrame {
         DefaultTableModel model = (DefaultTableModel) tableStudents.getModel();
         model.setRowCount(0);
 
-        // fetch-join to avoid LazyInitializationException
+
         List<Student> list = studentRepo.findAllWithCourses();
 
         for (Student s : list) {
@@ -155,7 +155,6 @@ public class StudentSwingView extends JFrame {
         }
     }
 
-    // ---------- Actions ----------
 
     private void addStudent(ActionEvent e) {
         String m = txtMatricola.getText().trim();
@@ -173,7 +172,7 @@ public class StudentSwingView extends JFrame {
 
         Course selected = (Course) cmbCourse.getSelectedItem();
         if (selected != null) {
-            // capacity check BEFORE creating the student
+
             if (!hasCapacity(selected.getId())) {
                 warn("Course is full: " + selected.getCode());
                 return;
@@ -210,9 +209,9 @@ public class StudentSwingView extends JFrame {
         Course selected = (Course) cmbCourse.getSelectedItem();
         Long targetCourseId = (selected == null ? null : selected.getId());
 
-        // If changing course, enforce capacity.
+
         if (targetCourseId != null) {
-            // Is the student already in this course? If yes, allow; if no, enforce capacity.
+
             boolean alreadyIn = isStudentInCourse(id, targetCourseId);
             if (!alreadyIn && !hasCapacity(targetCourseId)) {
                 warn("Course is full: " + selected.getCode());
@@ -221,7 +220,7 @@ public class StudentSwingView extends JFrame {
         }
 
         try {
-            // Uses your repository's transactional update method we added earlier
+
             studentRepo.updateStudent(id, m, n, em, targetCourseId);
             clearForm();
             loadStudents();
@@ -252,9 +251,9 @@ public class StudentSwingView extends JFrame {
         info("Student deleted.");
     }
 
-    // ---------- Capacity helpers (query DB fresh) ----------
 
-    /** true if enrolled count < maxSeats */
+
+
     private boolean hasCapacity(Long courseId) {
         if (courseId == null) return true;
         int enrolled = enrolledCount(courseId);
@@ -262,7 +261,7 @@ public class StudentSwingView extends JFrame {
         return enrolled < max;
     }
 
-    /** current enrolled count for a course (fresh from DB) */
+
     private int enrolledCount(Long courseId) {
         EntityManager em = JpaUtil.emf().createEntityManager();
         try {
@@ -276,7 +275,7 @@ public class StudentSwingView extends JFrame {
         }
     }
 
-    /** fetch maxSeats for the course */
+
     private int findMaxSeats(Long courseId) {
         EntityManager em = JpaUtil.emf().createEntityManager();
         try {
@@ -290,7 +289,7 @@ public class StudentSwingView extends JFrame {
         }
     }
 
-    /** is the given student currently enrolled in that course? */
+
     private boolean isStudentInCourse(Long studentId, Long courseId) {
         EntityManager em = JpaUtil.emf().createEntityManager();
         try {
@@ -306,7 +305,7 @@ public class StudentSwingView extends JFrame {
         }
     }
 
-    // ---------- UI helpers ----------
+
 
     private void clearForm() {
         txtMatricola.setText("");
