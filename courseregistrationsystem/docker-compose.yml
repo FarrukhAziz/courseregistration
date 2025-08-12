@@ -28,3 +28,6 @@ services:
 
 volumes:
   postgres_data:
+
+  # docker exec -it crs-postgres psql -U mavenUser -d courseRegTestDb
+
