@@ -56,7 +56,7 @@ public class CourseSwingView extends JFrame {
     public CourseSwingView() {
         setTitle("Courses");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setBounds(160, 160, 960, 520);
+        setBounds(160, 160, 980, 540);
 
         contentPane = new JPanel();
         contentPane.setBorder(new EmptyBorder(12, 12, 12, 12));
@@ -83,6 +83,7 @@ public class CourseSwingView extends JFrame {
         tblCourses = new JTable();
         tableModel = new DefaultTableModel(
             new Object[][] {},
+
             new String[] { "ID", "Code", "Title", "CFU", "Max Seats", "Students Enrolled" }
         ) {
             private static final long serialVersionUID = 1L;
@@ -148,7 +149,7 @@ public class CourseSwingView extends JFrame {
                       .addComponent(btnDelete, GroupLayout.DEFAULT_SIZE, 120, Short.MAX_VALUE)
                       .addComponent(btnClear, GroupLayout.DEFAULT_SIZE, 120, Short.MAX_VALUE)
                       .addComponent(btnRefresh, GroupLayout.DEFAULT_SIZE, 120, Short.MAX_VALUE)))
-                  .addComponent(scrollPane, GroupLayout.PREFERRED_SIZE, 920, GroupLayout.PREFERRED_SIZE))
+                  .addComponent(scrollPane, GroupLayout.PREFERRED_SIZE, 940, GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         gl.setVerticalGroup(
@@ -181,13 +182,14 @@ public class CourseSwingView extends JFrame {
         );
         contentPane.setLayout(gl);
 
-        // Load from DB on window open
+
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override public void windowOpened(java.awt.event.WindowEvent e) {
                 refreshTable();
             }
         });
     }
+
 
 
     private void onAdd(ActionEvent e) {
@@ -253,11 +255,14 @@ public class CourseSwingView extends JFrame {
         }
     }
 
+
+
     private void refreshTable() {
         tableModel.setRowCount(0);
         for (Course c : controller.loadAll()) {
             int enrolled = 0;
             try {
+
                 enrolled = controller.enrolledCount(c.getId());
             } catch (Exception ignore) { }
             tableModel.addRow(new Object[] {
@@ -302,6 +307,7 @@ public class CourseSwingView extends JFrame {
     private void error(String msg) {
         JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
     }
+
 
     public JTextField getTxtCode() { return txtCode; }
     public JTextField getTxtTitle() { return txtTitle; }
