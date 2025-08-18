@@ -12,7 +12,7 @@ public class Student {
   @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(nullable = false, length = 32)
+  @Column(nullable = false, length = 32, unique = true)
   private String matricola;
 
   @Column(nullable = false, length = 100)
