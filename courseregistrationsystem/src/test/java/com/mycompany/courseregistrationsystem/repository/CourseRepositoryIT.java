@@ -1,4 +1,3 @@
-
 package com.mycompany.courseregistrationsystem.repository;
 
 import com.mycompany.courseregistrationsystem.controller.JpaUtil;
@@ -16,12 +15,10 @@ import static org.junit.Assert.*;
 public class CourseRepositoryIT {
 
     private static EntityManagerFactory emf;
-
     private CourseRepository repo;
 
     @BeforeClass
     public static void initEmf() {
-
         emf = JpaUtil.emf();
         assertNotNull("EntityManagerFactory should be initialized", emf);
 
@@ -36,12 +33,18 @@ public class CourseRepositoryIT {
 
     @AfterClass
     public static void closeEmf() {
-        if (emf != null) emf.close();
+        if (emf != null) {
+            emf.close();
+        }
     }
 
     @Before
     public void setUp() {
         repo = new CourseRepository();
+
+        // Clean DB before each test
+        List<Course> all = repo.findAll();
+        all.forEach(course -> repo.deleteById(course.getId()));
     }
 
     // --------------------- tests ---------------------
@@ -87,7 +90,6 @@ public class CourseRepositoryIT {
     public void update_existingCourse_changesPersistedValues() {
         Course c = repo.save(newCourse("DB" + System.nanoTime(), "Databases", 6, 60));
 
-
         c.setTitle("Databases (Updated)");
         c.setCfu(8);
         c.setMaxSeats(45);
@@ -113,7 +115,6 @@ public class CourseRepositoryIT {
 
     @Test
     public void deleteById_nonExisting_noErrorAndNoChange() {
-
         repo.deleteById(999_999L);
         assertTrue(repo.findAll().isEmpty());
     }
@@ -122,10 +123,10 @@ public class CourseRepositoryIT {
     public void save_duplicateCode_violatesUniqueConstraint() {
         String code = "UNIQ" + System.nanoTime();
         repo.save(newCourse(code, "Course A", 6, 30));
-
         repo.save(newCourse(code, "Course B", 9, 40));
     }
 
+    // --------------------- helper ---------------------
 
     private static Course newCourse(String code, String title, int cfu, int maxSeats) {
         Course c = new Course();
