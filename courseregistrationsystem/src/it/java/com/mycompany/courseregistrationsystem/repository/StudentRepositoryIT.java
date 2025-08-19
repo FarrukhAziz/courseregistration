@@ -128,13 +128,11 @@ public class StudentRepositoryIT {
 
     @Test(expected = IllegalArgumentException.class)
     public void updateStudent_duplicateMatricola_throwsException() {
-
         students.save(newStudent("1234572", "Frank Green", "frank@example.com"));
         Student s2 = students.save(newStudent("1234573", "Grace Hill", "grace@example.com"));
 
         students.updateStudent(s2.getId(), "1234572", "Grace Updated", "grace2@example.com", null);
     }
-
 
     @Test
     public void deleteById_existing_removesStudent() {
@@ -181,7 +179,7 @@ public class StudentRepositoryIT {
 
     private Student newStudent(String matricola, String fullName, String email) {
         Student s = new Student();
-        s.setMatricola(matricola); // numeric-only
+        s.setMatricola(matricola);
         s.setFullName(fullName);
         s.setEmail(email);
         return s;
