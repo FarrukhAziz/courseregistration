@@ -69,4 +69,15 @@ public class CourseRepository {
       em.close();
     }
   }
+  
+  public Optional<Course> findById(Long id) {
+	    EntityManager em = JpaUtil.emf().createEntityManager();
+	    try {
+	        Course course = em.find(Course.class, id);
+	        return course != null ? Optional.of(course) : Optional.empty();
+	    } finally {
+	        em.close();
+	    }
+	}
+
 }
