@@ -5,6 +5,7 @@ import com.mycompany.courseregistrationsystem.model.Course;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
+import javax.persistence.TypedQuery;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,13 +16,21 @@ public class CourseRepository {
     EntityTransaction tx = em.getTransaction();
     try {
       tx.begin();
+
       if (c.getId() == null) {
+
+        TypedQuery<Long> q = em.createQuery(
+            "select count(x) from Course x where x.code = :code", Long.class);
+        q.setParameter("code", c.getCode());
+        if (q.getSingleResult() > 0L) {
+          throw new javax.persistence.PersistenceException("Duplicate course code: " + c.getCode());
+        }
         em.persist(c);
-        em.flush();
       } else {
         c = em.merge(c);
-        em.flush(); 
       }
+
+      em.flush();
       tx.commit();
       return c;
     } finally {
@@ -33,8 +42,7 @@ public class CourseRepository {
   public List<Course> findAll() {
     EntityManager em = JpaUtil.emf().createEntityManager();
     try {
-
-      return em.createQuery("from Course c ORDER BY c.id", Course.class).getResultList();
+      return em.createQuery("from Course c order by c.id", Course.class).getResultList();
     } finally {
       em.close();
     }
@@ -43,11 +51,10 @@ public class CourseRepository {
   public Optional<Course> findByCode(String code) {
     EntityManager em = JpaUtil.emf().createEntityManager();
     try {
-      List<Course> list = em.createQuery(
-          "from Course c where c.code = :code", Course.class)
+      return em.createQuery("from Course c where c.code = :code", Course.class)
           .setParameter("code", code)
-          .getResultList();
-      return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
+          .getResultStream()
+          .findFirst();
     } finally {
       em.close();
     }
@@ -61,7 +68,6 @@ public class CourseRepository {
       Course c = em.find(Course.class, id);
       if (c != null) {
         em.remove(c);
-        em.flush();
       }
       tx.commit();
     } finally {
@@ -69,15 +75,13 @@ public class CourseRepository {
       em.close();
     }
   }
-  
-  public Optional<Course> findById(Long id) {
-	    EntityManager em = JpaUtil.emf().createEntityManager();
-	    try {
-	        Course course = em.find(Course.class, id);
-	        return course != null ? Optional.of(course) : Optional.empty();
-	    } finally {
-	        em.close();
-	    }
-	}
 
+  public Optional<Course> findById(Long id) {
+    EntityManager em = JpaUtil.emf().createEntityManager();
+    try {
+      return Optional.ofNullable(em.find(Course.class, id));
+    } finally {
+      em.close();
+    }
+  }
 }
