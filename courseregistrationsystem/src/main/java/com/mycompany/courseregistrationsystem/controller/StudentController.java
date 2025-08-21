@@ -7,7 +7,15 @@ import java.util.List;
 
 public class StudentController {
 
-  private final StudentRepository repo = new StudentRepository();
+  private final StudentRepository repo;
+
+  public StudentController() {
+    this.repo = new StudentRepository();
+  }
+
+  public StudentController(StudentRepository repo) {
+    this.repo = repo;
+  }
 
   public List<Student> loadAll() {
     return repo.findAll();
