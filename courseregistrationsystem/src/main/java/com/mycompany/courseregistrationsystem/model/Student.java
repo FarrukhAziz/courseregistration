@@ -9,7 +9,8 @@ import java.util.Set;
        uniqueConstraints = @UniqueConstraint(name = "uk_student_matricola", columnNames = "matricola"))
 public class Student {
 
-  @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
   @Column(nullable = false, length = 32, unique = true)
@@ -25,7 +26,7 @@ public class Student {
   @JoinTable(name = "enrollments",
       joinColumns = @JoinColumn(name = "student_id"),
       inverseJoinColumns = @JoinColumn(name = "course_id"))
-  private Set<Course> courses = new HashSet<>();
+  private Set<Course> courses = new HashSet<Course>();
 
   public Student() {}
 
