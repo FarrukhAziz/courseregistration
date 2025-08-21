@@ -39,7 +39,6 @@ public class StudentSwingView extends JFrame {
         contentPane.setBorder(new EmptyBorder(10, 10, 10, 10));
         setContentPane(contentPane);
 
-
         JPanel panelForm = new JPanel(new GridBagLayout());
         GridBagConstraints gc = new GridBagConstraints();
         gc.insets = new Insets(6, 6, 6, 6);
@@ -49,18 +48,22 @@ public class StudentSwingView extends JFrame {
 
         gc.gridx = 0; gc.gridy = row; panelForm.add(new JLabel("Matricola:"), gc);
         txtMatricola = new JTextField();
+        txtMatricola.setName("txtMatricola");
         gc.gridx = 1; gc.gridy = row++; gc.weightx = 1; panelForm.add(txtMatricola, gc);
 
         gc.gridx = 0; gc.gridy = row; gc.weightx = 0; panelForm.add(new JLabel("Full Name:"), gc);
         txtFullName = new JTextField();
+        txtFullName.setName("txtFullName");
         gc.gridx = 1; gc.gridy = row++; gc.weightx = 1; panelForm.add(txtFullName, gc);
 
         gc.gridx = 0; gc.gridy = row; gc.weightx = 0; panelForm.add(new JLabel("Email:"), gc);
         txtEmail = new JTextField();
+        txtEmail.setName("txtEmail");
         gc.gridx = 1; gc.gridy = row++; gc.weightx = 1; panelForm.add(txtEmail, gc);
 
         gc.gridx = 0; gc.gridy = row; gc.weightx = 0; panelForm.add(new JLabel("Course:"), gc);
         cmbCourse = new JComboBox<>();
+        cmbCourse.setName("cmbCourse");
         cmbCourse.setRenderer(new DefaultListCellRenderer() {
             private static final long serialVersionUID = 1L;
             @Override public Component getListCellRendererComponent(JList<?> list, Object value, int index,
@@ -77,8 +80,8 @@ public class StudentSwingView extends JFrame {
 
         contentPane.add(panelForm, BorderLayout.NORTH);
 
-
         tableStudents = new JTable();
+        tableStudents.setName("tblStudents");
         tableStudents.setModel(new DefaultTableModel(
                 new Object[][]{},
                 new String[]{"ID", "Matricola", "Full Name", "Email", "Course(s)"}
@@ -90,20 +93,23 @@ public class StudentSwingView extends JFrame {
         JScrollPane scroll = new JScrollPane(tableStudents);
         contentPane.add(scroll, BorderLayout.CENTER);
 
-
         JPanel panelButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
         JButton btnAdd = new JButton("Add");
+        btnAdd.setName("btnAddStudent");
         JButton btnUpdate = new JButton("Update");
+        btnUpdate.setName("btnUpdateStudent");
         JButton btnDelete = new JButton("Delete");
+        btnDelete.setName("btnDeleteStudent");
         JButton btnClear = new JButton("Clear");
+        btnClear.setName("btnClearStudent");
         JButton btnRefresh = new JButton("Refresh");
+        btnRefresh.setName("btnRefreshStudent");
         panelButtons.add(btnAdd);
         panelButtons.add(btnUpdate);
         panelButtons.add(btnDelete);
         panelButtons.add(btnClear);
         panelButtons.add(btnRefresh);
         contentPane.add(panelButtons, BorderLayout.SOUTH);
-
 
         btnAdd.addActionListener(this::addStudent);
         btnUpdate.addActionListener(this::updateStudent);
@@ -122,12 +128,9 @@ public class StudentSwingView extends JFrame {
             }
         });
 
-
         refreshCourses();
         loadStudents();
     }
-
-
 
     private void refreshCourses() {
         DefaultComboBoxModel<Course> model = new DefaultComboBoxModel<>();
@@ -140,10 +143,7 @@ public class StudentSwingView extends JFrame {
     private void loadStudents() {
         DefaultTableModel model = (DefaultTableModel) tableStudents.getModel();
         model.setRowCount(0);
-
-
         List<Student> list = studentRepo.findAllWithCourses();
-
         for (Student s : list) {
             String coursesCol = (s.getCourses() == null || s.getCourses().isEmpty())
                     ? ""
@@ -154,7 +154,6 @@ public class StudentSwingView extends JFrame {
             model.addRow(new Object[]{ s.getId(), s.getMatricola(), s.getFullName(), s.getEmail(), coursesCol });
         }
     }
-
 
     private void addStudent(ActionEvent e) {
         String m = txtMatricola.getText().trim();
@@ -172,7 +171,6 @@ public class StudentSwingView extends JFrame {
 
         Course selected = (Course) cmbCourse.getSelectedItem();
         if (selected != null) {
-
             if (!hasCapacity(selected.getId())) {
                 warn("Course is full: " + selected.getCode());
                 return;
@@ -209,9 +207,7 @@ public class StudentSwingView extends JFrame {
         Course selected = (Course) cmbCourse.getSelectedItem();
         Long targetCourseId = (selected == null ? null : selected.getId());
 
-
         if (targetCourseId != null) {
-
             boolean alreadyIn = isStudentInCourse(id, targetCourseId);
             if (!alreadyIn && !hasCapacity(targetCourseId)) {
                 warn("Course is full: " + selected.getCode());
@@ -220,7 +216,6 @@ public class StudentSwingView extends JFrame {
         }
 
         try {
-
             studentRepo.updateStudent(id, m, n, em, targetCourseId);
             clearForm();
             loadStudents();
@@ -251,16 +246,12 @@ public class StudentSwingView extends JFrame {
         info("Student deleted.");
     }
 
-
-
-
     private boolean hasCapacity(Long courseId) {
         if (courseId == null) return true;
         int enrolled = enrolledCount(courseId);
         int max = findMaxSeats(courseId);
         return enrolled < max;
     }
-
 
     private int enrolledCount(Long courseId) {
         EntityManager em = JpaUtil.emf().createEntityManager();
@@ -275,7 +266,6 @@ public class StudentSwingView extends JFrame {
         }
     }
 
-
     private int findMaxSeats(Long courseId) {
         EntityManager em = JpaUtil.emf().createEntityManager();
         try {
@@ -288,7 +278,6 @@ public class StudentSwingView extends JFrame {
             em.close();
         }
     }
-
 
     private boolean isStudentInCourse(Long studentId, Long courseId) {
         EntityManager em = JpaUtil.emf().createEntityManager();
@@ -304,8 +293,6 @@ public class StudentSwingView extends JFrame {
             em.close();
         }
     }
-
-
 
     private void clearForm() {
         txtMatricola.setText("");

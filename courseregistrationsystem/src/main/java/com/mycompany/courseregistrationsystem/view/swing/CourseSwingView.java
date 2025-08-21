@@ -25,7 +25,6 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.JOptionPane;
 
-
 public class CourseSwingView extends JFrame {
 
     private static final long serialVersionUID = 1L;
@@ -72,24 +71,29 @@ public class CourseSwingView extends JFrame {
 
         txtCode = new JTextField();
         txtCode.setColumns(10);
+        txtCode.setName("txtCode");
 
         txtTitle = new JTextField();
         txtTitle.setColumns(10);
+        txtTitle.setName("txtTitle");
 
         spnCfu = new JSpinner(new SpinnerNumberModel(6, 1, 60, 1));
+        spnCfu.setName("spnCfu");
+
         spnMaxSeats = new JSpinner(new SpinnerNumberModel(50, 1, 500, 1));
+        spnMaxSeats.setName("spnMaxSeats");
 
         JScrollPane scrollPane = new JScrollPane();
         tblCourses = new JTable();
         tableModel = new DefaultTableModel(
             new Object[][] {},
-
             new String[] { "ID", "Code", "Title", "CFU", "Max Seats", "Students Enrolled" }
         ) {
             private static final long serialVersionUID = 1L;
             @Override public boolean isCellEditable(int row, int col) { return false; }
         };
         tblCourses.setModel(tableModel);
+        tblCourses.setName("tblCourses");
         tblCourses.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
                 int row = tblCourses.getSelectedRow();
@@ -104,18 +108,23 @@ public class CourseSwingView extends JFrame {
         scrollPane.setViewportView(tblCourses);
 
         JButton btnAdd    = new JButton("Add");
+        btnAdd.setName("btnAddCourse");
         btnAdd.addActionListener(this::onAdd);
 
         JButton btnUpdate = new JButton("Update");
+        btnUpdate.setName("btnUpdateCourse");
         btnUpdate.addActionListener(this::onUpdate);
 
         JButton btnDelete = new JButton("Delete");
+        btnDelete.setName("btnDeleteCourse");
         btnDelete.addActionListener(this::onDelete);
 
         JButton btnClear  = new JButton("Clear");
+        btnClear.setName("btnClearCourse");
         btnClear.addActionListener(e -> clearForm());
 
         JButton btnRefresh = new JButton("Refresh");
+        btnRefresh.setName("btnRefreshCourse");
         btnRefresh.addActionListener(e -> refreshTable());
 
         GroupLayout gl = new GroupLayout(contentPane);
@@ -182,15 +191,10 @@ public class CourseSwingView extends JFrame {
         );
         contentPane.setLayout(gl);
 
-
         addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override public void windowOpened(java.awt.event.WindowEvent e) {
-                refreshTable();
-            }
+            @Override public void windowOpened(java.awt.event.WindowEvent e) { refreshTable(); }
         });
     }
-
-
 
     private void onAdd(ActionEvent e) {
         String code  = txtCode.getText().trim();
@@ -255,23 +259,15 @@ public class CourseSwingView extends JFrame {
         }
     }
 
-
-
     private void refreshTable() {
         tableModel.setRowCount(0);
         for (Course c : controller.loadAll()) {
             int enrolled = 0;
             try {
-
                 enrolled = controller.enrolledCount(c.getId());
             } catch (Exception ignore) { }
             tableModel.addRow(new Object[] {
-                c.getId(),
-                c.getCode(),
-                c.getTitle(),
-                c.getCfu(),
-                c.getMaxSeats(),
-                enrolled
+                c.getId(), c.getCode(), c.getTitle(), c.getCfu(), c.getMaxSeats(), enrolled
             });
         }
         tblCourses.clearSelection();
@@ -293,7 +289,6 @@ public class CourseSwingView extends JFrame {
     private int parseInt(String s, int def) {
         try { return Integer.parseInt(s.trim()); } catch (Exception e) { return def; }
     }
-
     private Long parseLong(String s, Long def) {
         try { return Long.valueOf(s.trim()); } catch (Exception e) { return def; }
     }
@@ -307,7 +302,6 @@ public class CourseSwingView extends JFrame {
     private void error(String msg) {
         JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
     }
-
 
     public JTextField getTxtCode() { return txtCode; }
     public JTextField getTxtTitle() { return txtTitle; }
