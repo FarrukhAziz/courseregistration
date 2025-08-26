@@ -39,12 +39,15 @@ public class CourseSwingView extends JFrame {
     private JTable tblCourses;
     private DefaultTableModel tableModel;
 
-    private final CourseController controller = new CourseController();
+    // NOTE: make controller injectable (not final)
+    private CourseController controller;
 
     public static void main(String[] args) {
         EventQueue.invokeLater(() -> {
             try {
                 CourseSwingView frame = new CourseSwingView();
+                // default controller for manual run
+                frame.setController(new CourseController());
                 frame.setVisible(true);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -196,7 +199,13 @@ public class CourseSwingView extends JFrame {
         });
     }
 
+    /** Allow tests/app to inject the controller that shares the same EMF/DB. */
+    public void setController(CourseController controller) {
+        this.controller = controller;
+    }
+
     private void onAdd(ActionEvent e) {
+        ensureController();
         String code  = txtCode.getText().trim();
         String title = txtTitle.getText().trim();
         int cfu      = (Integer) spnCfu.getValue();
@@ -215,6 +224,7 @@ public class CourseSwingView extends JFrame {
     }
 
     private void onUpdate(ActionEvent e) {
+        ensureController();
         int row = tblCourses.getSelectedRow();
         if (row < 0) { warn("Select a row to update."); return; }
 
@@ -239,6 +249,7 @@ public class CourseSwingView extends JFrame {
     }
 
     private void onDelete(ActionEvent e) {
+        ensureController();
         int row = tblCourses.getSelectedRow();
         if (row < 0) { warn("Select a row to delete."); return; }
 
@@ -260,6 +271,7 @@ public class CourseSwingView extends JFrame {
     }
 
     private void refreshTable() {
+        ensureController();
         tableModel.setRowCount(0);
         for (Course c : controller.loadAll()) {
             int enrolled = 0;
@@ -279,6 +291,12 @@ public class CourseSwingView extends JFrame {
         spnCfu.setValue(6);
         spnMaxSeats.setValue(50);
         tblCourses.clearSelection();
+    }
+
+    private void ensureController() {
+        if (controller == null) {
+            controller = new CourseController(); // fallback for manual run
+        }
     }
 
     private String val(int row, int col) {
@@ -303,6 +321,7 @@ public class CourseSwingView extends JFrame {
         JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
+    // getters (unchanged)
     public JTextField getTxtCode() { return txtCode; }
     public JTextField getTxtTitle() { return txtTitle; }
     public JSpinner getSpnCfu() { return spnCfu; }

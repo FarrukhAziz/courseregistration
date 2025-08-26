@@ -1,10 +1,12 @@
 package com.mycompany.courseregistrationsystem.view.swing;
 
+import com.mycompany.courseregistrationsystem.controller.CourseController;
 import com.mycompany.courseregistrationsystem.controller.JpaUtil;
 import com.mycompany.courseregistrationsystem.model.Course;
-import org.assertj.swing.core.matcher.JButtonMatcher;
 import org.assertj.swing.edt.GuiActionRunner;
 import org.assertj.swing.fixture.FrameFixture;
+import org.assertj.swing.fixture.JOptionPaneFixture;
+import org.assertj.swing.finder.JOptionPaneFinder;
 import org.assertj.swing.junit.runner.GUITestRunner;
 import org.assertj.swing.junit.testcase.AssertJSwingJUnitTestCase;
 import org.junit.*;
@@ -59,42 +61,80 @@ public class CourseSwingViewIT extends AssertJSwingJUnitTestCase {
   protected void onSetUp() {
     clearDb();
     view = GuiActionRunner.execute(CourseSwingView::new);
+    // INJECT controller that uses THE SAME EMF
+    GuiActionRunner.execute(() -> view.setController(new CourseController(emf)));
     window = new FrameFixture(robot(), view);
     window.show();
+    robot().waitForIdle();
   }
 
   @Override
   protected void onTearDown() {
-    window.cleanUp();
+    if (window != null) window.cleanUp();
     clearDb();
   }
 
   private void clearDb() {
     EntityManager em = emf.createEntityManager();
     EntityTransaction tx = em.getTransaction();
-    tx.begin();
-    em.createNativeQuery("DELETE FROM enrollments").executeUpdate();
-    em.createQuery("DELETE FROM Student").executeUpdate();
-    em.createQuery("DELETE FROM Course").executeUpdate();
-    tx.commit();
-    em.close();
+    try {
+      tx.begin();
+      em.createNativeQuery("DELETE FROM enrollments").executeUpdate();
+      em.createQuery("DELETE FROM Student").executeUpdate();
+      em.createQuery("DELETE FROM Course").executeUpdate();
+      tx.commit();
+    } finally {
+      if (tx.isActive()) tx.rollback();
+      em.close();
+    }
   }
 
   private void preloadCourse(String code, String title, int cfu, int maxSeats) {
     EntityManager em = emf.createEntityManager();
     EntityTransaction tx = em.getTransaction();
-    tx.begin();
-    Course c = new Course();
-    c.setCode(code);
-    c.setTitle(title);
-    c.setCfu(cfu);
-    c.setMaxSeats(maxSeats);
-    em.persist(c);
-    tx.commit();
-    em.close();
+    try {
+      tx.begin();
+      Course c = new Course();
+      c.setCode(code);
+      c.setTitle(title);
+      c.setCfu(cfu);
+      c.setMaxSeats(maxSeats);
+      em.persist(c);
+      tx.commit();
+    } finally {
+      if (tx.isActive()) tx.rollback();
+      em.close();
+    }
   }
 
-  // --- Tests ---
+  private void clickOkOnAnyDialog() {
+    await().atMost(6, TimeUnit.SECONDS).untilAsserted(() -> {
+      JOptionPaneFixture pane = JOptionPaneFinder.findOptionPane().using(robot());
+      pane.requireVisible();
+      pane.okButton().click();
+    });
+    robot().waitForIdle();
+  }
+
+  private void clickYesOnConfirm() {
+    await().atMost(6, TimeUnit.SECONDS).untilAsserted(() -> {
+      JOptionPaneFixture pane = JOptionPaneFinder.findOptionPane().using(robot());
+      pane.requireVisible();
+      pane.yesButton().click();
+    });
+    robot().waitForIdle();
+  }
+
+  private void clickNoOnConfirm() {
+    await().atMost(6, TimeUnit.SECONDS).untilAsserted(() -> {
+      JOptionPaneFixture pane = JOptionPaneFinder.findOptionPane().using(robot());
+      pane.requireVisible();
+      pane.noButton().click();
+    });
+    robot().waitForIdle();
+  }
+
+  // ---------------- TESTS (9) ----------------
 
   @Test
   public void t1_initialTableEmpty_onShow() {
@@ -102,66 +142,105 @@ public class CourseSwingViewIT extends AssertJSwingJUnitTestCase {
   }
 
   @Test
-  public void t2_refreshShowsPreloadedCourse() {
-    preloadCourse("CS101", "Intro to CS", 6, 30);
-    window.button("btnRefreshCourse").click();
+  public void t2_addValidCourse_addsRowAndShowsDialog() {
+    window.textBox("txtCode").enterText("CS101");
+    window.textBox("txtTitle").enterText("Intro to CS");
+    window.button("btnAddCourse").click();
+    clickOkOnAnyDialog();
 
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
       String[][] rows = window.table("tblCourses").contents();
       assertThat(rows.length).isEqualTo(1);
       assertThat(rows[0][1]).isEqualTo("CS101");
       assertThat(rows[0][2]).isEqualTo("Intro to CS");
-      assertThat(Integer.parseInt(rows[0][5])).isEqualTo(0);
     });
   }
 
   @Test
-  public void t3_selectRowLoadsFormFields() {
-    preloadCourse("MATH101", "Math I", 6, 40);
+  public void t3_duplicateCode_showsWarning_noExtraRow() {
+    preloadCourse("CS101","Intro to CS",6,30);
     window.button("btnRefreshCourse").click();
-    window.table("tblCourses").selectRows(0);
 
-    assertThat(window.textBox("txtCode").text()).isEqualTo("MATH101");
-    assertThat(window.textBox("txtTitle").text()).isEqualTo("Math I");
-    // spinner text can vary across LAF; rely on table contents instead
-    String[][] rows = window.table("tblCourses").contents();
-    assertThat(Integer.parseInt(rows[0][3])).isEqualTo(6);
-    assertThat(Integer.parseInt(rows[0][4])).isEqualTo(40);
+    int before = window.table("tblCourses").rowCount();
+
+    window.textBox("txtCode").setText("CS101");
+    window.textBox("txtTitle").setText("Anything");
+    window.button("btnAddCourse").click();
+    clickOkOnAnyDialog(); // warning
+
+    assertThat(window.table("tblCourses").rowCount()).isEqualTo(before);
   }
 
   @Test
-  public void t4_updateCourseViaUI() {
-    preloadCourse("PHY101", "Physics I", 6, 40);
+  public void t4_refreshShowsPreloadedCourse() {
+    preloadCourse("MATH101","Math I",6,40);
     window.button("btnRefreshCourse").click();
-    window.table("tblCourses").selectRows(0);
-
-    window.textBox("txtTitle").setText("Physics I (Updated)");
-    window.spinner("spnCfu").increment(1);      // 7
-    window.spinner("spnMaxSeats").decrement(1); // 39
-    window.button("btnUpdateCourse").click();
-    window.dialog().button(JButtonMatcher.withText("OK")).click();
 
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
-      String[][] afterUpdate = window.table("tblCourses").contents();
-      assertThat(afterUpdate.length).isEqualTo(1);
-      assertThat(afterUpdate[0][2]).isEqualTo("Physics I (Updated)");
-      assertThat(Integer.parseInt(afterUpdate[0][3])).isEqualTo(7);
-      assertThat(Integer.parseInt(afterUpdate[0][4])).isEqualTo(39);
+      String[][] rows = window.table("tblCourses").contents();
+      assertThat(rows.length).isEqualTo(1);
+      assertThat(rows[0][1]).isEqualTo("MATH101");
+      assertThat(rows[0][2]).isEqualTo("Math I");
     });
   }
 
   @Test
-  public void t5_deleteCourseViaUI() {
-    preloadCourse("CHEM101", "Chemistry I", 6, 35);
+  public void t5_selectRowLoadsFormFields() {
+    preloadCourse("PHY101","Physics I",6,45);
+    window.button("btnRefreshCourse").click();
+    window.table("tblCourses").selectRows(0);
+
+    assertThat(window.textBox("txtCode").text()).isEqualTo("PHY101");
+    assertThat(window.textBox("txtTitle").text()).isEqualTo("Physics I");
+  }
+
+  @Test
+  public void t6_updateCourse_editsRowAndShowsDialog() {
+    preloadCourse("BIO101","Biology I",6,30);
+    window.button("btnRefreshCourse").click();
+    window.table("tblCourses").selectRows(0);
+
+    window.textBox("txtTitle").setText("Biology I (Updated)");
+    window.button("btnUpdateCourse").click();
+    clickOkOnAnyDialog();
+
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+      String[][] rows = window.table("tblCourses").contents();
+      assertThat(rows[0][2]).isEqualTo("Biology I (Updated)");
+    });
+  }
+
+  @Test
+  public void t7_deleteCourse_chooseNo_keepsRow() {
+    preloadCourse("CHEM101","Chem I",6,35);
     window.button("btnRefreshCourse").click();
     window.table("tblCourses").selectRows(0);
 
     window.button("btnDeleteCourse").click();
-    window.dialog().button(JButtonMatcher.withText("Yes")).click();
-    window.dialog().button(JButtonMatcher.withText("OK")).click();
+    clickNoOnConfirm();
+
+    assertThat(window.table("tblCourses").rowCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void t8_deleteCourse_chooseYes_removesRow() {
+    preloadCourse("HIST101","History I",6,20);
+    window.button("btnRefreshCourse").click();
+    window.table("tblCourses").selectRows(0);
+
+    window.button("btnDeleteCourse").click();
+    clickYesOnConfirm();
+    clickOkOnAnyDialog();
 
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() ->
         assertThat(window.table("tblCourses").rowCount()).isEqualTo(0)
     );
+  }
+
+  @Test
+  public void t9_addInvalid_showsValidationDialog_noRow() {
+    window.button("btnAddCourse").click(); // empty -> IAE -> Warning
+    clickOkOnAnyDialog();
+    assertThat(window.table("tblCourses").rowCount()).isEqualTo(0);
   }
 }

@@ -4,32 +4,77 @@ import com.mycompany.courseregistrationsystem.model.Course;
 import com.mycompany.courseregistrationsystem.repository.CourseRepository;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * CourseController wired to a shared EntityManagerFactory.
+ * <p>
+ * Why this version:
+ * - Uses the SAME EMF everywhere (no ad-hoc JpaUtil.emf() calls inside methods),
+ *   so tests that preload data (via the same EMF) will see it after Refresh.
+ * - Still supports your existing code: you can construct it with no args,
+ *   a repo only, an EMF only, or both.
+ */
 public class CourseController {
 
   private final CourseRepository repo;
+  private final EntityManagerFactory emf;
 
+  /** Default app run — uses global EMF and a default repository. */
   public CourseController() {
-    this.repo = new CourseRepository();
+    this(JpaUtil.emf(), new CourseRepository());
   }
 
+  /** Use default EMF but a custom repository (kept for backward compatibility). */
   public CourseController(CourseRepository repo) {
+    this(JpaUtil.emf(), repo);
+  }
+
+  /** Use a provided EMF with a default repository. */
+  public CourseController(EntityManagerFactory emf) {
+    this(emf, new CourseRepository());
+  }
+
+  /** Fully injectable: share the exact EMF and repository the caller wants. */
+  public CourseController(EntityManagerFactory emf, CourseRepository repo) {
+    this.emf = emf;
     this.repo = repo;
   }
+
+  // ------------------- Queries -------------------
 
   public List<Course> loadAll() {
     return repo.findAll();
   }
 
+  public int enrolledCount(Long courseId) {
+    if (courseId == null) return 0;
+    EntityManager em = emf.createEntityManager();
+    try {
+      Integer count = em.createQuery(
+          "select size(c.students) from Course c where c.id = :id", Integer.class)
+          .setParameter("id", courseId)
+          .getSingleResult();
+      return count == null ? 0 : count;
+    } finally {
+      em.close();
+    }
+  }
+
+  // ------------------- Commands -------------------
+
   public Course add(String code, String title, int cfu, int maxSeats) {
-    if (isBlank(code) || isBlank(title)) throw new IllegalArgumentException("Code and Title are required.");
-    if (cfu <= 0 || maxSeats <= 0) throw new IllegalArgumentException("CFU and Max Seats must be positive.");
+    if (isBlank(code) || isBlank(title))
+      throw new IllegalArgumentException("Code and Title are required.");
+    if (cfu <= 0 || maxSeats <= 0)
+      throw new IllegalArgumentException("CFU and Max Seats must be positive.");
 
     Optional<Course> existing = repo.findByCode(code.trim());
-    if (existing.isPresent()) throw new IllegalArgumentException("Course code already exists: " + code);
+    if (existing.isPresent())
+      throw new IllegalArgumentException("Course code already exists: " + code);
 
     Course c = new Course();
     c.setCode(code.trim());
@@ -41,23 +86,28 @@ public class CourseController {
 
   public Course update(Long id, String code, String title, int cfu, int maxSeats) {
     if (id == null) throw new IllegalArgumentException("Course id is required.");
-    if (isBlank(code) || isBlank(title)) throw new IllegalArgumentException("Code and Title are required.");
-    if (cfu <= 0 || maxSeats <= 0) throw new IllegalArgumentException("CFU and Max Seats must be positive.");
+    if (isBlank(code) || isBlank(title))
+      throw new IllegalArgumentException("Code and Title are required.");
+    if (cfu <= 0 || maxSeats <= 0)
+      throw new IllegalArgumentException("CFU and Max Seats must be positive.");
 
-    EntityManager em = JpaUtil.emf().createEntityManager();
+    EntityManager em = emf.createEntityManager();
     EntityTransaction tx = em.getTransaction();
     try {
       tx.begin();
-      Course entity = em.find(Course.class, id);
-      if (entity == null) throw new IllegalArgumentException("Course not found with id: " + id);
 
-      if (!entity.getCode().equals(code.trim())) {
-        Optional<Course> dup = repo.findByCode(code.trim());
+      Course entity = em.find(Course.class, id);
+      if (entity == null)
+        throw new IllegalArgumentException("Course not found with id: " + id);
+
+      String newCode = code.trim();
+      if (!entity.getCode().equals(newCode)) {
+        Optional<Course> dup = repo.findByCode(newCode);
         if (dup.isPresent() && !dup.get().getId().equals(id))
           throw new IllegalArgumentException("Course code already exists: " + code);
       }
 
-      entity.setCode(code.trim());
+      entity.setCode(newCode);
       entity.setTitle(title.trim());
       entity.setCfu(cfu);
       entity.setMaxSeats(maxSeats);
@@ -76,19 +126,7 @@ public class CourseController {
     repo.deleteById(id);
   }
 
-  public int enrolledCount(Long courseId) {
-    if (courseId == null) return 0;
-    EntityManager em = JpaUtil.emf().createEntityManager();
-    try {
-      Integer count = em.createQuery(
-          "select size(c.students) from Course c where c.id = :id", Integer.class)
-          .setParameter("id", courseId)
-          .getSingleResult();
-      return count == null ? 0 : count;
-    } finally {
-      em.close();
-    }
-  }
+  // ------------------- Helpers -------------------
 
   private boolean isBlank(String s) {
     return s == null || s.trim().isEmpty();
