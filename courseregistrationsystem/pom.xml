@@ -3,26 +3,25 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.mycompany.orderassignmentsystem</groupId>
-  <artifactId>com.mycompany.orderassignmentsystem</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <groupId>com.mycompany</groupId>
+  <artifactId>courseregistrationsystem</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
-
-  <name>Order Assignment System</name>
+  <name>Course Registration System</name>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
 
-
+    <!-- DB defaults for local/Testcontainers -->
     <postgres.user>mavenUser</postgres.user>
     <postgres.password>maven1234</postgres.password>
     <postgres.host>localhost</postgres.host>
     <postgres.port>5432</postgres.port>
-    <postgres.dbName>orderWorkerTestDb</postgres.dbName>
+    <postgres.dbName>courseRegistrationTestDb</postgres.dbName>
 
-
+    <!-- Versions -->
     <slf4j-api-version>1.7.32</slf4j-api-version>
     <logback-classic-version>1.2.6</logback-classic-version>
     <testcontainers-version>1.19.8</testcontainers-version>
@@ -36,7 +35,7 @@
   </properties>
 
   <dependencies>
-
+    <!-- JPA / Hibernate -->
     <dependency>
       <groupId>javax.persistence</groupId>
       <artifactId>javax.persistence-api</artifactId>
@@ -48,14 +47,14 @@
       <version>${hibernate-core-version46}</version>
     </dependency>
 
-
+    <!-- PostgreSQL driver -->
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <version>${postgresql.version}</version>
     </dependency>
 
-
+    <!-- Logging -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -67,31 +66,44 @@
       <version>${logback-classic-version}</version>
     </dependency>
 
-
+    <!-- Test stack -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.13.2</version>
       <scope>test</scope>
     </dependency>
+
+    <!-- AssertJ Swing (for GUI tests) -->
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-swing-junit</artifactId>
       <version>${assertj-swing-junit-version}</version>
       <scope>test</scope>
     </dependency>
+    <!-- AssertJ Core -->
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>3.24.2</version>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
       <version>${awaitility-version}</version>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
       <version>${mockito.version}</version>
       <scope>test</scope>
     </dependency>
+
+    <!-- Testcontainers -->
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
@@ -104,8 +116,8 @@
       <version>${testcontainers-version}</version>
       <scope>test</scope>
     </dependency>
-    
-    
+
+    <!-- Cucumber -->
     <dependency>
       <groupId>io.cucumber</groupId>
       <artifactId>cucumber-java</artifactId>
@@ -133,7 +145,47 @@
         </configuration>
       </plugin>
 
-      <!-- Surefire for unit tests -->
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>3.0.0</version>
+        <executions>
+          <execution>
+            <id>add-test-source</id>
+            <phase>generate-test-sources</phase>
+            <goals>
+              <goal>add-test-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>src/it/java</source>
+                <source>src/e2e/java</source>
+                <source>src/bdd/java</source>
+              </sources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>add-test-resource</id>
+            <phase>generate-test-resources</phase>
+            <goals>
+              <goal>add-test-resource</goal>
+            </goals>
+            <configuration>
+              <resources>
+                <resource>
+                  <directory>src/it/resources</directory>
+                </resource>
+                <resource>
+                  <directory>src/bdd/resources</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -145,13 +197,13 @@
         </configuration>
       </plugin>
 
-      <!-- Failsafe for IT, BDD, and E2E -->
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>2.22.2</version>
         <executions>
-          <!-- IT -->
+          <!-- Integration Tests -->
           <execution>
             <id>integration-tests</id>
             <goals>
@@ -164,7 +216,7 @@
               </includes>
             </configuration>
           </execution>
-          <!-- E2E -->
+          <!-- End-to-End (GUI) tests -->
           <execution>
             <id>e2e-tests</id>
             <goals>
@@ -177,7 +229,7 @@
               </includes>
             </configuration>
           </execution>
-          <!-- BDD -->
+          <!-- BDD tests -->
           <execution>
             <id>bdd-tests</id>
             <goals>

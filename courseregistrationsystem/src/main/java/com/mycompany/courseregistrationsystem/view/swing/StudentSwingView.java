@@ -236,10 +236,6 @@ public class StudentSwingView extends JFrame {
         Long id = parseLong(val(row, 0), null);
         if (id == null) { warn("Invalid row selected."); return; }
 
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "Delete selected student?", "Confirm", JOptionPane.YES_NO_OPTION);
-        if (confirm != JOptionPane.YES_OPTION) return;
-
         studentRepo.deleteById(id);
         clearForm();
         loadStudents();
@@ -329,8 +325,31 @@ public class StudentSwingView extends JFrame {
         JOptionPane.showMessageDialog(this, msg, "Warning", JOptionPane.WARNING_MESSAGE);
     }
     private void info(String msg) {
-        JOptionPane.showMessageDialog(this, msg, "Info", JOptionPane.INFORMATION_MESSAGE);
+        SwingUtilities.invokeLater(() -> {
+            JOptionPane pane = new JOptionPane(
+                    msg,
+                    JOptionPane.INFORMATION_MESSAGE,
+                    JOptionPane.DEFAULT_OPTION);
+
+            JDialog dialog = pane.createDialog(this, "Info");
+            dialog.setModal(false);
+            dialog.setModalityType(Dialog.ModalityType.MODELESS);
+            dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+            dialog.setAlwaysOnTop(true);
+            dialog.setVisible(true);
+
+            new javax.swing.Timer(2000, e -> dialog.dispose()) {/**
+				 * 
+				 */
+				private static final long serialVersionUID = 1L;
+
+			{
+                setRepeats(false);
+                start();
+            }};
+        });
     }
+
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new StudentSwingView().setVisible(true));

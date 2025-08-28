@@ -15,14 +15,17 @@ import javax.swing.JPanel;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.border.EmptyBorder;
 
+import com.mycompany.courseregistrationsystem.controller.CourseController;
 import com.mycompany.courseregistrationsystem.view.swing.StudentSwingView;
 import com.mycompany.courseregistrationsystem.view.swing.CourseSwingView;
-
 
 public class CourseRegistrationApp extends JFrame {
 
     private static final long serialVersionUID = 1L;
     private JPanel contentPane;
+
+
+    private CourseController injectedCourseController;
 
     public static void main(String[] args) {
         EventQueue.invokeLater(() -> {
@@ -48,9 +51,11 @@ public class CourseRegistrationApp extends JFrame {
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
 
         JButton btnStudentPortal = new JButton("Student's Portal");
+        btnStudentPortal.setName("btnStudentPortal");
         btnStudentPortal.addActionListener(this::openStudentPortal);
 
         JButton btnProfessorPortal = new JButton("Professor's Portal");
+        btnProfessorPortal.setName("btnProfessorPortal");
         btnProfessorPortal.addActionListener(this::openProfessorPortal);
 
         GroupLayout gl_contentPane = new GroupLayout(contentPane);
@@ -81,14 +86,15 @@ public class CourseRegistrationApp extends JFrame {
         contentPane.setLayout(gl_contentPane);
     }
 
-    private void openStudentPortal(ActionEvent e) {
+    public void setInjectedCourseController(CourseController controller) {
+        this.injectedCourseController = controller;
+    }
 
+    private void openStudentPortal(ActionEvent e) {
         setEnabled(false);
 
         StudentSwingView studentView = new StudentSwingView();
-
         studentView.setTitle("Student's Portal");
-
 
         studentView.addWindowListener(new WindowAdapter() {
             @Override public void windowClosed(WindowEvent we)  { reenableMain(); }
@@ -99,12 +105,14 @@ public class CourseRegistrationApp extends JFrame {
     }
 
     private void openProfessorPortal(ActionEvent e) {
-    	
         setEnabled(false);
 
         CourseSwingView courseView = new CourseSwingView();
-
         courseView.setTitle("Professor's Portal");
+
+        if (injectedCourseController != null) {
+            courseView.setController(injectedCourseController);
+        }
 
         courseView.addWindowListener(new WindowAdapter() {
             @Override public void windowClosed(WindowEvent we)  { reenableMain(); }

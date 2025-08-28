@@ -39,14 +39,13 @@ public class CourseSwingView extends JFrame {
     private JTable tblCourses;
     private DefaultTableModel tableModel;
 
-    // NOTE: make controller injectable (not final)
     private CourseController controller;
 
     public static void main(String[] args) {
         EventQueue.invokeLater(() -> {
             try {
                 CourseSwingView frame = new CourseSwingView();
-                // default controller for manual run
+
                 frame.setController(new CourseController());
                 frame.setVisible(true);
             } catch (Exception e) {
@@ -199,7 +198,7 @@ public class CourseSwingView extends JFrame {
         });
     }
 
-    /** Allow tests/app to inject the controller that shares the same EMF/DB. */
+
     public void setController(CourseController controller) {
         this.controller = controller;
     }
@@ -295,7 +294,7 @@ public class CourseSwingView extends JFrame {
 
     private void ensureController() {
         if (controller == null) {
-            controller = new CourseController(); // fallback for manual run
+            controller = new CourseController();
         }
     }
 
@@ -321,7 +320,7 @@ public class CourseSwingView extends JFrame {
         JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
-    // getters (unchanged)
+    // getters
     public JTextField getTxtCode() { return txtCode; }
     public JTextField getTxtTitle() { return txtTitle; }
     public JSpinner getSpnCfu() { return spnCfu; }
