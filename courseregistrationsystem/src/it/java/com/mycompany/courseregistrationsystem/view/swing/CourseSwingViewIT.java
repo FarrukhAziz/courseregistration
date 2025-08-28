@@ -5,6 +5,7 @@ import com.mycompany.courseregistrationsystem.controller.JpaUtil;
 import com.mycompany.courseregistrationsystem.model.Course;
 import org.assertj.swing.edt.GuiActionRunner;
 import org.assertj.swing.fixture.FrameFixture;
+import org.assertj.swing.fixture.JButtonFixture;
 import org.assertj.swing.fixture.JOptionPaneFixture;
 import org.assertj.swing.finder.JOptionPaneFinder;
 import org.assertj.swing.junit.runner.GUITestRunner;
@@ -21,13 +22,14 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.swing.edt.GuiActionRunner.execute;
 import static org.awaitility.Awaitility.await;
 
 @RunWith(GUITestRunner.class)
 public class CourseSwingViewIT extends AssertJSwingJUnitTestCase {
 
   @SuppressWarnings("resource")
-@ClassRule
+  @ClassRule
   public static PostgreSQLContainer<?> POSTGRES =
       new PostgreSQLContainer<>("postgres:15")
           .withDatabaseName("ui_course_it")
@@ -41,7 +43,7 @@ public class CourseSwingViewIT extends AssertJSwingJUnitTestCase {
 
   @BeforeClass
   public static void bootDb() {
-    Map<String,String> p = new HashMap<>();
+    Map<String, String> p = new HashMap<>();
     p.put("hibernate.connection.url", POSTGRES.getJdbcUrl());
     p.put("hibernate.connection.username", POSTGRES.getUsername());
     p.put("hibernate.connection.password", POSTGRES.getPassword());
@@ -61,7 +63,6 @@ public class CourseSwingViewIT extends AssertJSwingJUnitTestCase {
   protected void onSetUp() {
     clearDb();
     view = GuiActionRunner.execute(CourseSwingView::new);
-    // INJECT controller that uses THE SAME EMF
     GuiActionRunner.execute(() -> view.setController(new CourseController(emf)));
     window = new FrameFixture(robot(), view);
     window.show();
@@ -116,7 +117,8 @@ public class CourseSwingViewIT extends AssertJSwingJUnitTestCase {
     robot().waitForIdle();
   }
 
-  private void clickYesOnConfirm() {
+  @SuppressWarnings("unused")
+private void clickYesOnConfirm() {
     await().atMost(6, TimeUnit.SECONDS).untilAsserted(() -> {
       JOptionPaneFixture pane = JOptionPaneFinder.findOptionPane().using(robot());
       pane.requireVisible();
@@ -124,6 +126,12 @@ public class CourseSwingViewIT extends AssertJSwingJUnitTestCase {
     });
     robot().waitForIdle();
   }
+  
+  private void clickYesOnDialog() {
+	    JOptionPaneFixture pane = JOptionPaneFinder.findOptionPane().using(robot());
+	    pane.pressAndReleaseKeys(java.awt.event.KeyEvent.VK_ENTER);
+	    robot().waitForIdle();
+	  }
 
   private void clickNoOnConfirm() {
     await().atMost(6, TimeUnit.SECONDS).untilAsserted(() -> {
@@ -134,18 +142,29 @@ public class CourseSwingViewIT extends AssertJSwingJUnitTestCase {
     robot().waitForIdle();
   }
 
-  // ---------------- TESTS (9) ----------------
+  private void click(FrameFixture win, String btnName) {
+    JButtonFixture btn = win.button(btnName).requireVisible().requireEnabled();
+    try {
+      btn.focus();
+      btn.click();
+    } catch (Throwable ignored) {
+      execute(() -> btn.target().doClick());
+    }
+    robot().waitForIdle();
+  }
+
+  // ---------------- Tests ----------------
 
   @Test
-  public void t1_initialTableEmpty_onShow() {
+  public void shows_empty_table_on_open() {
     assertThat(window.table("tblCourses").rowCount()).isEqualTo(0);
   }
 
   @Test
-  public void t2_addValidCourse_addsRowAndShowsDialog() {
+  public void add_adds_row_and_shows_info() {
     window.textBox("txtCode").enterText("CS101");
     window.textBox("txtTitle").enterText("Intro to CS");
-    window.button("btnAddCourse").click();
+    click(window, "btnAddCourse");
     clickOkOnAnyDialog();
 
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
@@ -157,24 +176,24 @@ public class CourseSwingViewIT extends AssertJSwingJUnitTestCase {
   }
 
   @Test
-  public void t3_duplicateCode_showsWarning_noExtraRow() {
-    preloadCourse("CS101","Intro to CS",6,30);
-    window.button("btnRefreshCourse").click();
+  public void add_duplicate_code_shows_warning() {
+    preloadCourse("CS101", "Intro to CS", 6, 30);
+    click(window, "btnRefreshCourse");
 
     int before = window.table("tblCourses").rowCount();
 
     window.textBox("txtCode").setText("CS101");
     window.textBox("txtTitle").setText("Anything");
-    window.button("btnAddCourse").click();
-    clickOkOnAnyDialog(); // warning
+    click(window, "btnAddCourse");
+    clickOkOnAnyDialog();
 
     assertThat(window.table("tblCourses").rowCount()).isEqualTo(before);
   }
 
   @Test
-  public void t4_refreshShowsPreloadedCourse() {
-    preloadCourse("MATH101","Math I",6,40);
-    window.button("btnRefreshCourse").click();
+  public void refresh_shows_preloaded_course() {
+    preloadCourse("MATH101", "Math I", 6, 40);
+    click(window, "btnRefreshCourse");
 
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
       String[][] rows = window.table("tblCourses").contents();
@@ -185,52 +204,96 @@ public class CourseSwingViewIT extends AssertJSwingJUnitTestCase {
   }
 
   @Test
-  public void t5_selectRowLoadsFormFields() {
-    preloadCourse("PHY101","Physics I",6,45);
-    window.button("btnRefreshCourse").click();
-    window.table("tblCourses").selectRows(0);
+  public void selection_populates_form_fields() {
+    preloadCourse("PHY101", "Physics I", 6, 45);
+    click(window, "btnRefreshCourse");
+    await()
+    .atMost(5, TimeUnit.SECONDS)
+    .untilAsserted(() -> assertThat(window.table("tblCourses").rowCount()).isEqualTo(1));
+    org.assertj.swing.fixture.JTableFixture tbl = window.table("tblCourses");
+    org.assertj.swing.data.TableCell first = org.assertj.swing.data.TableCell.row(0).column(0);
+    tbl.cell(first).click();
+    robot().waitForIdle();
+    if (!tbl.target().isRowSelected(0)) {
+    	tbl.selectRows(0);
+    	robot().waitForIdle();
+    }
+    assertThat(tbl.target().isRowSelected(0)).isTrue();
 
     assertThat(window.textBox("txtCode").text()).isEqualTo("PHY101");
     assertThat(window.textBox("txtTitle").text()).isEqualTo("Physics I");
   }
 
   @Test
-  public void t6_updateCourse_editsRowAndShowsDialog() {
-    preloadCourse("BIO101","Biology I",6,30);
-    window.button("btnRefreshCourse").click();
-    window.table("tblCourses").selectRows(0);
+  public void update_edits_row_and_shows_info() {
+    preloadCourse("CS202", "Data Structures", 6, 30);
+    click(window, "btnRefreshCourse");
 
-    window.textBox("txtTitle").setText("Biology I (Updated)");
-    window.button("btnUpdateCourse").click();
+    await()
+    .atMost(5, TimeUnit.SECONDS)
+    .untilAsserted(() -> assertThat(window.table("tblCourses").rowCount()).isEqualTo(1));
+    org.assertj.swing.fixture.JTableFixture tbl = window.table("tblCourses");
+    org.assertj.swing.data.TableCell first = org.assertj.swing.data.TableCell.row(0).column(0);
+    tbl.cell(first).click();
+    robot().waitForIdle();
+    if (!tbl.target().isRowSelected(0)) {
+    	tbl.selectRows(0);
+    	robot().waitForIdle();
+    }
+    assertThat(tbl.target().isRowSelected(0)).isTrue();
+
+    window.textBox("txtTitle").setText("Data Structures (Updated)");
+    click(window, "btnUpdateCourse");
     clickOkOnAnyDialog();
 
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
       String[][] rows = window.table("tblCourses").contents();
-      assertThat(rows[0][2]).isEqualTo("Biology I (Updated)");
+      assertThat(rows[0][2]).isEqualTo("Data Structures (Updated)");
     });
   }
 
   @Test
-  public void t7_deleteCourse_chooseNo_keepsRow() {
-    preloadCourse("CHEM101","Chem I",6,35);
-    window.button("btnRefreshCourse").click();
-    window.table("tblCourses").selectRows(0);
+  public void delete_no_keeps_row() {
+    preloadCourse("CHEM101", "Chem I", 6, 35);
+    click(window, "btnRefreshCourse");
+    await()
+    .atMost(5, TimeUnit.SECONDS)
+    .untilAsserted(() -> assertThat(window.table("tblCourses").rowCount()).isEqualTo(1));
+    org.assertj.swing.fixture.JTableFixture tbl = window.table("tblCourses");
+    org.assertj.swing.data.TableCell first = org.assertj.swing.data.TableCell.row(0).column(0);
+    tbl.cell(first).click();
+    robot().waitForIdle();
+    if (!tbl.target().isRowSelected(0)) {
+    	tbl.selectRows(0);
+    	robot().waitForIdle();
+    }
+    assertThat(tbl.target().isRowSelected(0)).isTrue();
 
-    window.button("btnDeleteCourse").click();
+    click(window, "btnDeleteCourse");
     clickNoOnConfirm();
 
     assertThat(window.table("tblCourses").rowCount()).isEqualTo(1);
   }
 
   @Test
-  public void t8_deleteCourse_chooseYes_removesRow() {
-    preloadCourse("HIST101","History I",6,20);
-    window.button("btnRefreshCourse").click();
-    window.table("tblCourses").selectRows(0);
+  public void delete_yes_removes_row() {
+    preloadCourse("HIST101", "History I", 6, 20);
+    click(window, "btnRefreshCourse");
+    await()
+    .atMost(5, TimeUnit.SECONDS)
+    .untilAsserted(() -> assertThat(window.table("tblCourses").rowCount()).isEqualTo(1));
+    org.assertj.swing.fixture.JTableFixture tbl = window.table("tblCourses");
+    org.assertj.swing.data.TableCell first = org.assertj.swing.data.TableCell.row(0).column(0);
+    tbl.cell(first).click();
+    robot().waitForIdle();
+    if (!tbl.target().isRowSelected(0)) {
+    	tbl.selectRows(0);
+    	robot().waitForIdle();
+    }
+    assertThat(tbl.target().isRowSelected(0)).isTrue();
 
-    window.button("btnDeleteCourse").click();
-    clickYesOnConfirm();
-    clickOkOnAnyDialog();
+    click(window, "btnDeleteCourse");
+    clickYesOnDialog();
 
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() ->
         assertThat(window.table("tblCourses").rowCount()).isEqualTo(0)
@@ -238,8 +301,8 @@ public class CourseSwingViewIT extends AssertJSwingJUnitTestCase {
   }
 
   @Test
-  public void t9_addInvalid_showsValidationDialog_noRow() {
-    window.button("btnAddCourse").click(); // empty -> IAE -> Warning
+  public void add_invalid_shows_validation_and_no_row() {
+    click(window, "btnAddCourse");
     clickOkOnAnyDialog();
     assertThat(window.table("tblCourses").rowCount()).isEqualTo(0);
   }

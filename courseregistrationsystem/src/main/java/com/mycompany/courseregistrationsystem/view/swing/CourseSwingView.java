@@ -3,6 +3,7 @@ package com.mycompany.courseregistrationsystem.view.swing;
 import com.mycompany.courseregistrationsystem.controller.CourseController;
 import com.mycompany.courseregistrationsystem.model.Course;
 
+import java.awt.Dialog;
 import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
@@ -12,6 +13,7 @@ import java.awt.event.MouseEvent;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -21,6 +23,7 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.JOptionPane;
@@ -313,9 +316,33 @@ public class CourseSwingView extends JFrame {
     private void warn(String msg) {
         JOptionPane.showMessageDialog(this, msg, "Warning", JOptionPane.WARNING_MESSAGE);
     }
+    
     private void info(String msg) {
-        JOptionPane.showMessageDialog(this, msg, "Info", JOptionPane.INFORMATION_MESSAGE);
+        SwingUtilities.invokeLater(() -> {
+            JOptionPane pane = new JOptionPane(
+                    msg,
+                    JOptionPane.INFORMATION_MESSAGE,
+                    JOptionPane.DEFAULT_OPTION);
+
+            JDialog dialog = pane.createDialog(this, "Info");
+            dialog.setModal(false);
+            dialog.setModalityType(Dialog.ModalityType.MODELESS);
+            dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+            dialog.setAlwaysOnTop(true);
+            dialog.setVisible(true);
+
+            new javax.swing.Timer(2000, e -> dialog.dispose()) {/**
+				 * 
+				 */
+				private static final long serialVersionUID = 1L;
+
+			{
+                setRepeats(false);
+                start();
+            }};
+        });
     }
+    
     private void error(String msg) {
         JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
     }
