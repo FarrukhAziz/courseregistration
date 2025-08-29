@@ -322,7 +322,29 @@ public class StudentSwingView extends JFrame {
     }
 
     private void warn(String msg) {
-        JOptionPane.showMessageDialog(this, msg, "Warning", JOptionPane.WARNING_MESSAGE);
+        SwingUtilities.invokeLater(() -> {
+            JOptionPane pane = new JOptionPane(
+                    msg,
+                    JOptionPane.WARNING_MESSAGE,
+                    JOptionPane.DEFAULT_OPTION);
+
+            JDialog dialog = pane.createDialog(this, "Info");
+            dialog.setModal(false);
+            dialog.setModalityType(Dialog.ModalityType.MODELESS);
+            dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+            dialog.setAlwaysOnTop(true);
+            dialog.setVisible(true);
+
+            new javax.swing.Timer(2000, e -> dialog.dispose()) {/**
+				 * 
+				 */
+				private static final long serialVersionUID = 1L;
+
+			{
+                setRepeats(false);
+                start();
+            }};
+        });
     }
     private void info(String msg) {
         SwingUtilities.invokeLater(() -> {
