@@ -14,13 +14,6 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
 
-    <!-- DB defaults for local/Testcontainers -->
-    <postgres.user>mavenUser</postgres.user>
-    <postgres.password>maven1234</postgres.password>
-    <postgres.host>localhost</postgres.host>
-    <postgres.port>5432</postgres.port>
-    <postgres.dbName>courseRegistrationTestDb</postgres.dbName>
-
     <!-- Versions -->
     <slf4j-api-version>1.7.32</slf4j-api-version>
     <logback-classic-version>1.2.6</logback-classic-version>
@@ -32,6 +25,7 @@
     <awaitility-version>4.0.2</awaitility-version>
     <mockito.version>3.12.4</mockito.version>
     <cucumber.version>5.5.0</cucumber.version>
+    <h2.version>2.2.224</h2.version>
   </properties>
 
   <dependencies>
@@ -47,7 +41,7 @@
       <version>${hibernate-core-version46}</version>
     </dependency>
 
-    <!-- PostgreSQL driver -->
+
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
@@ -66,7 +60,7 @@
       <version>${logback-classic-version}</version>
     </dependency>
 
-    <!-- Test stack -->
+    <!-- Unit test stack -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -74,7 +68,15 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- AssertJ Swing (for GUI tests) -->
+
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <version>${h2.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- AssertJ Swing -->
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-swing-junit</artifactId>
@@ -154,9 +156,7 @@
           <execution>
             <id>add-test-source</id>
             <phase>generate-test-sources</phase>
-            <goals>
-              <goal>add-test-source</goal>
-            </goals>
+            <goals><goal>add-test-source</goal></goals>
             <configuration>
               <sources>
                 <source>src/it/java</source>
@@ -168,24 +168,18 @@
           <execution>
             <id>add-test-resource</id>
             <phase>generate-test-resources</phase>
-            <goals>
-              <goal>add-test-resource</goal>
-            </goals>
+            <goals><goal>add-test-resource</goal></goals>
             <configuration>
               <resources>
-                <resource>
-                  <directory>src/it/resources</directory>
-                </resource>
-                <resource>
-                  <directory>src/bdd/resources</directory>
-                </resource>
+                <resource><directory>src/it/resources</directory></resource>
+                <resource><directory>src/bdd/resources</directory></resource>
               </resources>
             </configuration>
           </execution>
         </executions>
       </plugin>
 
-
+      <!-- Unit tests -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -194,15 +188,21 @@
           <includes>
             <include>**/*Test.java</include>
           </includes>
+          <systemPropertyVariables>
+
+            <persistence.unit>crsPU-test</persistence.unit>
+
+            <java.awt.headless>true</java.awt.headless>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
-
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>2.22.2</version>
         <executions>
+
           <!-- Integration Tests -->
           <execution>
             <id>integration-tests</id>
@@ -214,9 +214,14 @@
               <includes>
                 <include>**/*IT.java</include>
               </includes>
+              <systemPropertyVariables>
+                <persistence.unit>crsPU-test</persistence.unit>
+                <java.awt.headless>true</java.awt.headless>
+              </systemPropertyVariables>
             </configuration>
           </execution>
-          <!-- End-to-End (GUI) tests -->
+
+          <!-- End-to-End GUI tests -->
           <execution>
             <id>e2e-tests</id>
             <goals>
@@ -227,8 +232,14 @@
               <includes>
                 <include>**/*E2E.java</include>
               </includes>
+              <systemPropertyVariables>
+                <persistence.unit>crsPU-test</persistence.unit>
+
+                <java.awt.headless>false</java.awt.headless>
+              </systemPropertyVariables>
             </configuration>
           </execution>
+
           <!-- BDD tests -->
           <execution>
             <id>bdd-tests</id>
@@ -240,8 +251,13 @@
               <includes>
                 <include>**/*BDD.java</include>
               </includes>
+              <systemPropertyVariables>
+                <persistence.unit>crsPU-test</persistence.unit>
+                <java.awt.headless>true</java.awt.headless>
+              </systemPropertyVariables>
             </configuration>
           </execution>
+
         </executions>
       </plugin>
     </plugins>
