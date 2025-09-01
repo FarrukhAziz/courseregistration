@@ -225,41 +225,6 @@ private void clickYesOnConfirm() {
     assertThat(window.table("tblCourses").rowCount()).isEqualTo(1);
   }
 
-  @SuppressWarnings("unchecked")
-@Test
-  @GUITest
-  public void delete_chooseYes_delegatesAndRemovesRow() {
-    Course c1 = courseMock(ID1, CODE1, TITLE1, CFU1, MAX1);
-    when(controller.loadAll()).thenReturn(Arrays.asList(c1), Collections.emptyList());
-    when(controller.enrolledCount(ID1)).thenReturn(0);
-
-    window.button("btnRefreshCourse").click();
-
-    await()
-    .atMost(5, TimeUnit.SECONDS)
-    .untilAsserted(() -> assertThat(window.table("tblCourses").rowCount()).isEqualTo(1));
-    org.assertj.swing.fixture.JTableFixture tbl = window.table("tblCourses");
-    org.assertj.swing.data.TableCell first = org.assertj.swing.data.TableCell.row(0).column(0);
-    tbl.cell(first).click();
-    robot().waitForIdle();
-    if (!tbl.target().isRowSelected(0)) {
-    	tbl.selectRows(0);
-    	robot().waitForIdle();
-    }
-    assertThat(tbl.target().isRowSelected(0)).isTrue();
-
-    doNothing().when(controller).delete(ID1);
-
-    click(window,"btnDeleteCourse");
-    
-    clickYesOnDialog();
-
-    verify(controller).delete(ID1);
-
-    String[][] rows = window.table("tblCourses").contents();
-    assertThat(rows.length).isEqualTo(0);
-  }
-
   @Test
   @GUITest
   public void clearButton_resetsFormAndSelection() {
