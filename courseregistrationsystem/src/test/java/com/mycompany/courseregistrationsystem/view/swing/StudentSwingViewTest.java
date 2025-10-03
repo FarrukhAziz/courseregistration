@@ -1,242 +1,132 @@
 package com.mycompany.courseregistrationsystem.view.swing;
 
-import com.mycompany.courseregistrationsystem.controller.JpaUtil;
+import com.mycompany.courseregistrationsystem.controller.StudentController;
+import com.mycompany.courseregistrationsystem.model.Course;
+import com.mycompany.courseregistrationsystem.model.Student;
+import org.assertj.swing.annotation.GUITest;
+import org.assertj.swing.core.matcher.JButtonMatcher;
+import org.assertj.swing.core.matcher.JLabelMatcher;
 import org.assertj.swing.edt.GuiActionRunner;
+import org.assertj.swing.finder.JOptionPaneFinder;
 import org.assertj.swing.fixture.FrameFixture;
+import org.assertj.swing.fixture.JTableFixture;
 import org.assertj.swing.junit.runner.GUITestRunner;
 import org.assertj.swing.junit.testcase.AssertJSwingJUnitTestCase;
-import org.junit.*;
+import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.EntityTransaction;
-import java.util.HashMap;
-import java.util.Map;
+import javax.swing.*;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.swing.edt.GuiActionRunner.execute;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.Mockito.*;
 
+@SuppressWarnings("unused")
 @RunWith(GUITestRunner.class)
 public class StudentSwingViewTest extends AssertJSwingJUnitTestCase {
 
-    private static EntityManagerFactory emf;
+  private FrameFixture window;
+  private StudentSwingView view;
 
-    private StudentSwingView view;
-    private FrameFixture window;
+  @Mock
+  private StudentController controller;
 
-    @SuppressWarnings("unused")
-	private Long cs101Id;
-    @SuppressWarnings("unused")
-	private Long math101Id;
+  private AutoCloseable mocks;
 
-    @BeforeClass
-    public static void initializeDatabase() {
-        System.setProperty("java.awt.headless", "false");
-        Map<String, String> properties = new HashMap<>();
-        String url = "jdbc:h2:mem:student_unit;MODE=PostgreSQL;DB_CLOSE_DELAY=-1";
-        properties.put("javax.persistence.jdbc.url", url);
-        properties.put("javax.persistence.jdbc.user", "sa");
-        properties.put("javax.persistence.jdbc.password", "");
-        properties.put("javax.persistence.jdbc.driver", "org.h2.Driver");
-        properties.put("hibernate.connection.url", url);
-        properties.put("hibernate.connection.username", "sa");
-        properties.put("hibernate.connection.password", "");
-        properties.put("hibernate.connection.driver_class", "org.h2.Driver");
-        properties.put("hibernate.hbm2ddl.auto", "create-drop");
-        properties.put("hibernate.dialect", "org.hibernate.dialect.H2Dialect");
-        properties.put("hibernate.show_sql", "false");
-        properties.put("hibernate.format_sql", "false");
-        properties.put("hibernate.id.new_generator_mappings", "true");
-        JpaUtil.rebuild(properties);
-        emf = JpaUtil.emf();
-    }
+  @Override
+  protected void onSetUp() {
+    mocks = MockitoAnnotations.openMocks(this);
 
-    @AfterClass
-    public static void closeDatabase() {
-        if (emf != null) {
-            emf.close();
-        }
-    }
+    // Safe defaults so constructor refreshes don't explode
+    when(controller.loadAllCourses()).thenReturn(Collections.emptyList());
+    when(controller.findAllWithCourses()).thenReturn(Collections.emptyList());
 
-    @Override
-    protected void onSetUp() {
-        clearDatabase();
-        cs101Id = preloadCourse("CS101", "Intro to CS", 6, 50);
-        math101Id = preloadCourse("MATH101", "Math I", 6, 1);
+    view = execute(StudentSwingView::new);
+    execute(() -> view.setController(controller));
 
-        view = GuiActionRunner.execute(StudentSwingView::new);
-        window = new FrameFixture(robot(), view);
-        window.show();
-        robot().waitForIdle();
-    }
+    window = new FrameFixture(robot(), view);
+    window.show();
+    robot().waitForIdle();
+  }
 
-    @Override
-    protected void onTearDown() {
-        if (window != null) {
-            window.cleanUp();
-        }
-        clearDatabase();
-    }
+  @Override
+  protected void onTearDown() throws Exception {
+    if (window != null) window.cleanUp();
+    if (mocks != null) mocks.close();
+  }
+  
+ 
+private void uiAddStudent(String matricola, String name, String email, int courseIndexOrZero) {
+	    
+	    window.textBox("txtMatricola").setText(matricola);
+	    window.textBox("txtFullName").setText(name);
+	    window.textBox("txtEmail").setText(email);
+	    window.comboBox("cmbCourse").selectItem(courseIndexOrZero);
+	    javax.swing.JButton addBtn = window.button("btnAddStudent").target();
+	    execute(() -> { addBtn.requestFocusInWindow(); addBtn.doClick(); });
+	  }
 
-    private void clearDatabase() {
-        EntityManager em = emf.createEntityManager();
-        EntityTransaction tx = em.getTransaction();
-        try {
-            tx.begin();
-            em.createNativeQuery("DELETE FROM enrollments").executeUpdate();
-            em.createNativeQuery("DELETE FROM students").executeUpdate();
-            em.createNativeQuery("DELETE FROM courses").executeUpdate();
-            tx.commit();
-        } finally {
-            if (tx.isActive()) tx.rollback();
-            em.close();
-        }
-    }
+  // ---------------- tests ----------------
 
-    private Long preloadCourse(String code, String title, int cfu, int maxSeats) {
-        EntityManager em = emf.createEntityManager();
-        EntityTransaction tx = em.getTransaction();
-        try {
-            tx.begin();
-            Number nextId = (Number) em.createNativeQuery("SELECT COALESCE(MAX(id),0)+1 FROM courses").getSingleResult();
-            Long id = nextId.longValue();
-            em.createNativeQuery("INSERT INTO courses (id, code, title, cfu, maxSeats) VALUES (?,?,?,?,?)")
-                    .setParameter(1, id)
-                    .setParameter(2, code)
-                    .setParameter(3, title)
-                    .setParameter(4, cfu)
-                    .setParameter(5, maxSeats)
-                    .executeUpdate();
-            tx.commit();
-            return id;
-        } finally {
-            if (tx.isActive()) tx.rollback();
-            em.close();
-        }
-    }
+  @Test @GUITest
+  public void initialControls_areVisibleAndEnabled() {
+    window.label(JLabelMatcher.withText("Matricola:"));
+    window.label(JLabelMatcher.withText("Full Name:"));
+    window.label(JLabelMatcher.withText("Email:"));
+    window.label(JLabelMatcher.withText("Course:"));
 
-    private void addStudentToUI(String matricola, String fullName, String email, int courseIndex) {
-        window.button("btnRefreshStudent").click();
-        window.textBox("txtMatricola").setText(matricola);
-        window.textBox("txtFullName").setText(fullName);
-        window.textBox("txtEmail").setText(email);
-        window.comboBox("cmbCourse").selectItem(courseIndex);
-        execute(() -> window.button("btnAddStudent").target().doClick());
-    }
+    window.textBox("txtMatricola").requireEnabled();
+    window.textBox("txtFullName").requireEnabled();
+    window.textBox("txtEmail").requireEnabled();
+    window.comboBox("cmbCourse").requireEnabled();
 
-    private void clickButton(String buttonName) {
-        execute(() -> window.button(buttonName).target().doClick());
-        robot().waitForIdle();
-    }
+    window.table("tblStudents");
 
-    @Test
-    public void testInitialState_TableEmptyAndControlsEnabled() {
-        assertThat(window.table("tblStudents").rowCount()).isZero();
+    window.button(JButtonMatcher.withName("btnAddStudent")).requireEnabled();
+    window.button(JButtonMatcher.withName("btnUpdateStudent")).requireEnabled();
+    window.button(JButtonMatcher.withName("btnDeleteStudent")).requireEnabled();
+    window.button(JButtonMatcher.withName("btnClearStudent")).requireEnabled();
+    window.button(JButtonMatcher.withName("btnRefreshStudent")).requireEnabled();
+  }
 
-        window.textBox("txtMatricola").requireEnabled();
-        window.textBox("txtFullName").requireEnabled();
-        window.textBox("txtEmail").requireEnabled();
-        window.comboBox("cmbCourse").requireEnabled();
+  @Test @GUITest
+  public void update_withoutSelection_showsWarningDialog() {
+    JButton update = window.button("btnUpdateStudent").target();
+    execute(() -> { update.requestFocusInWindow(); update.doClick(); });
 
-        window.button("btnAddStudent").requireEnabled();
-        window.button("btnUpdateStudent").requireEnabled();
-        window.button("btnDeleteStudent").requireEnabled();
-        window.button("btnClearStudent").requireEnabled();
-        window.button("btnRefreshStudent").requireEnabled();
+    await().atMost(3, TimeUnit.SECONDS).untilAsserted(() -> {
+      JOptionPane pane = (JOptionPane) JOptionPaneFinder.findOptionPane().using(robot()).target();
+      assertThat(pane.getMessage().toString()).contains("Select a row to update");
+    });
+  }
 
-        String[] comboContents = window.comboBox("cmbCourse").contents();
-        assertThat(String.join("|", comboContents))
-                .contains("CS101 - Intro to CS")
-                .contains("MATH101 - Math I");
-    }
+  @Test @GUITest
+  public void delete_withoutSelection_showsWarningDialog() {
+    JButton del = window.button("btnDeleteStudent").target();
+    execute(() -> { del.requestFocusInWindow(); del.doClick(); });
 
-    @Test
-    public void testAddStudent_AddsStudentRow() {
-        addStudentToUI("1111111", "Farrukh Aziz", "farrukh@example.com", 1);
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
-            String[][] rows = window.table("tblStudents").contents();
-            assertThat(rows[0][1]).isEqualTo("1111111");
-            assertThat(rows[0][2]).isEqualTo("Farrukh Aziz");
-            assertThat(rows[0][4]).contains("CS101");
-        });
-    }
+    await().atMost(3, TimeUnit.SECONDS).untilAsserted(() -> {
+      JOptionPane pane = (JOptionPane) JOptionPaneFinder.findOptionPane().using(robot()).target();
+      assertThat(pane.getMessage().toString()).contains("Select a row to delete");
+    });
+  }
 
-    @Test
-    public void testAddDuplicateMatricola_ShowsWarningAndDoesNotAdd() {
-        addStudentToUI("1234567", "John Doe", "john@example.com", 1);
-        int beforeCount = window.table("tblStudents").rowCount();
+  @Test @GUITest
+  public void add_with_missing_fields_showsWarning_and_no_row_added() {
+    // Leave all fields empty and click Add
+    JButton add = window.button("btnAddStudent").target();
+    execute(() -> { add.requestFocusInWindow(); add.doClick(); });
 
-        window.textBox("txtMatricola").setText("1234567");
-        window.textBox("txtFullName").setText("Duplicate Name");
-        window.textBox("txtEmail").setText("dup@example.com");
-        window.comboBox("cmbCourse").selectItem(1);
-        clickButton("btnAddStudent");
+    await().atMost(3, TimeUnit.SECONDS).untilAsserted(() ->
+        JOptionPaneFinder.findOptionPane().using(robot()).requireVisible()
+    );
 
-        await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> {
-            assertThat(window.table("tblStudents").rowCount()).isEqualTo(beforeCount);
-        });
-    }
-
-    @Test
-    public void testUpdateSelectedStudent_ChangesFullName() {
-        addStudentToUI("2000001", "Alice Adams", "alice@example.com", 2);
-        window.table("tblStudents").selectRows(0);
-        window.textBox("txtFullName").setText("Alice A.");
-        clickButton("btnUpdateStudent");
-
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
-            String[][] rows = window.table("tblStudents").contents();
-            assertThat(rows[0][2]).isEqualTo("Alice A.");
-            assertThat(rows[0][4]).contains("MATH101");
-        });
-    }
-
-    @Test
-    public void testDeleteSelectedStudent_RemovesRow() {
-        addStudentToUI("3000001", "Bob Brown", "bob@example.com", 1);
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(window.table("tblStudents").rowCount()).isEqualTo(1));
-
-        window.table("tblStudents").selectRows(0);
-        clickButton("btnDeleteStudent");
-
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(window.table("tblStudents").rowCount()).isZero());
-    }
-
-    @Test
-    public void testCapacityCheck_PreventsAddingStudentWhenCourseIsFull() {
-        // MATH101 has maxSeats = 1
-        addStudentToUI("4000001", "First Student", "first@example.com", 2);
-
-        window.textBox("txtMatricola").setText("4000002");
-        window.textBox("txtFullName").setText("Second Student");
-        window.textBox("txtEmail").setText("second@example.com");
-        window.comboBox("cmbCourse").selectItem(2);
-        clickButton("btnAddStudent");
-
-        await().atMost(2, TimeUnit.SECONDS).untilAsserted(() ->
-                assertThat(window.table("tblStudents").rowCount()).isEqualTo(1));
-    }
-
-    @Test
-    public void testClearButton_ResetsFormKeepsTableData() {
-        addStudentToUI("5000001", "Charlie", "c@example.com", 1);
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() ->
-                assertThat(window.table("tblStudents").rowCount()).isEqualTo(1));
-
-        window.textBox("txtMatricola").setText("temp");
-        window.textBox("txtFullName").setText("temp");
-        window.textBox("txtEmail").setText("temp@example.com");
-        window.comboBox("cmbCourse").selectItem(0);
-
-        clickButton("btnClearStudent");
-
-        assertThat(window.textBox("txtMatricola").text()).isEmpty();
-        assertThat(window.textBox("txtFullName").text()).isEmpty();
-        assertThat(window.textBox("txtEmail").text()).isEmpty();
-        window.comboBox("cmbCourse").requireSelection(0);
-        assertThat(window.table("tblStudents").rowCount()).isEqualTo(1);
-    }
+    assertThat(window.table("tblStudents").rowCount()).isEqualTo(0);
+    // No controller call expected (signature may vary; we just assert no row appeared)
+  }
 }

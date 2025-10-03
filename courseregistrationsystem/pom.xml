@@ -214,10 +214,7 @@
               <includes>
                 <include>**/*IT.java</include>
               </includes>
-              <systemPropertyVariables>
-                <persistence.unit>crsPU-test</persistence.unit>
-                <java.awt.headless>true</java.awt.headless>
-              </systemPropertyVariables>
+           
             </configuration>
           </execution>
 

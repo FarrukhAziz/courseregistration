@@ -174,6 +174,17 @@ private void clickYesOnConfirm() {
       assertThat(rows[0][2]).isEqualTo("Intro to CS");
     });
   }
+  
+  @Test
+  public void add_invalid_shows_validation_and_no_row() {
+	window.textBox("txtCode").setText("test");
+    click(window, "btnAddCourse");
+    window.button("btnAddCourse").click();
+    clickOkOnAnyDialog();
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() ->
+    assertThat(window.table("tblCourses").rowCount()).isEqualTo(0)
+    );
+  }
 
   @Test
   public void add_duplicate_code_shows_warning() {
@@ -300,10 +311,5 @@ private void clickYesOnConfirm() {
     );
   }
 
-  @Test
-  public void add_invalid_shows_validation_and_no_row() {
-    click(window, "btnAddCourse");
-    clickOkOnAnyDialog();
-    assertThat(window.table("tblCourses").rowCount()).isEqualTo(0);
-  }
+  
 }

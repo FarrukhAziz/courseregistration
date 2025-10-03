@@ -82,7 +82,8 @@ private void clickYesOnConfirm() {
     robot().waitForIdle();
   }
   
-  private void clickYesOnDialog() {
+  @SuppressWarnings("unused")
+private void clickYesOnDialog() {
 	    JOptionPaneFixture pane = JOptionPaneFinder.findOptionPane().using(robot());
 	    pane.pressAndReleaseKeys(java.awt.event.KeyEvent.VK_ENTER);
 	    robot().waitForIdle();

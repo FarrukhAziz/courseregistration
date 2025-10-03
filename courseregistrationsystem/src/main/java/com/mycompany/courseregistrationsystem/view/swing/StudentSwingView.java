@@ -1,6 +1,7 @@
 package com.mycompany.courseregistrationsystem.view.swing;
 
 import com.mycompany.courseregistrationsystem.controller.JpaUtil;
+import com.mycompany.courseregistrationsystem.controller.StudentController;
 import com.mycompany.courseregistrationsystem.model.Course;
 import com.mycompany.courseregistrationsystem.model.Student;
 import com.mycompany.courseregistrationsystem.repository.CourseRepository;
@@ -25,9 +26,16 @@ public class StudentSwingView extends JFrame {
     private JTextField txtFullName;
     private JTextField txtEmail;
     private JComboBox<Course> cmbCourse;
+    
+    @SuppressWarnings("unused")
+	private StudentController controller;
 
     private final StudentRepository studentRepo = new StudentRepository();
     private final CourseRepository  courseRepo  = new CourseRepository();
+    
+    public void setController(StudentController controller) {
+        this.controller = controller;
+    }
 
     public StudentSwingView() {
         setTitle("Student's Portal");
