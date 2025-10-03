@@ -194,7 +194,7 @@
           </includes>
           <systemPropertyVariables>
             <persistence.unit>crsPU-test</persistence.unit>
-            <java.awt.headless>true</java.awt.headless>
+            <java.awt.headless>false</java.awt.headless>
           </systemPropertyVariables>
         </configuration>
       </plugin>
