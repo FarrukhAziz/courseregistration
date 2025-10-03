@@ -14,7 +14,7 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
 
-    <!-- Versions -->
+
     <slf4j-api-version>1.7.32</slf4j-api-version>
     <logback-classic-version>1.2.6</logback-classic-version>
     <testcontainers-version>1.19.8</testcontainers-version>
@@ -26,10 +26,16 @@
     <mockito.version>3.12.4</mockito.version>
     <cucumber.version>5.5.0</cucumber.version>
     <h2.version>2.2.224</h2.version>
+
+
+    <surefire.version>2.22.2</surefire.version>
+    <failsafe.version>2.22.2</failsafe.version>
+    <jacoco.version>0.8.8</jacoco.version>
+    <pitest.version>1.7.0</pitest.version>
   </properties>
 
   <dependencies>
-    <!-- JPA / Hibernate -->
+
     <dependency>
       <groupId>javax.persistence</groupId>
       <artifactId>javax.persistence-api</artifactId>
@@ -48,7 +54,7 @@
       <version>${postgresql.version}</version>
     </dependency>
 
-    <!-- Logging -->
+
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -60,14 +66,13 @@
       <version>${logback-classic-version}</version>
     </dependency>
 
-    <!-- Unit test stack -->
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.13.2</version>
       <scope>test</scope>
     </dependency>
-
 
     <dependency>
       <groupId>com.h2database</groupId>
@@ -76,14 +81,13 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- AssertJ Swing -->
+
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-swing-junit</artifactId>
       <version>${assertj-swing-junit-version}</version>
       <scope>test</scope>
     </dependency>
-    <!-- AssertJ Core -->
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
@@ -105,7 +109,7 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- Testcontainers -->
+
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
@@ -119,7 +123,7 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- Cucumber -->
+
     <dependency>
       <groupId>io.cucumber</groupId>
       <artifactId>cucumber-java</artifactId>
@@ -179,84 +183,178 @@
         </executions>
       </plugin>
 
-      <!-- Unit tests -->
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.22.2</version>
+        <version>${surefire.version}</version>
         <configuration>
           <includes>
             <include>**/*Test.java</include>
           </includes>
           <systemPropertyVariables>
-
             <persistence.unit>crsPU-test</persistence.unit>
-
             <java.awt.headless>true</java.awt.headless>
           </systemPropertyVariables>
         </configuration>
       </plugin>
 
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>2.22.2</version>
+        <version>${failsafe.version}</version>
+      </plugin>
+
+
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.version}</version>
         <executions>
-
-          <!-- Integration Tests -->
           <execution>
-            <id>integration-tests</id>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-            <configuration>
-              <includes>
-                <include>**/*IT.java</include>
-              </includes>
-           
-            </configuration>
+            <goals><goal>prepare-agent</goal></goals>
           </execution>
-
-          <!-- End-to-End GUI tests -->
           <execution>
-            <id>e2e-tests</id>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-            <configuration>
-              <includes>
-                <include>**/*E2E.java</include>
-              </includes>
-              <systemPropertyVariables>
-                <persistence.unit>crsPU-test</persistence.unit>
-
-                <java.awt.headless>false</java.awt.headless>
-              </systemPropertyVariables>
-            </configuration>
+            <id>report</id>
+            <phase>verify</phase>
+            <goals><goal>report</goal></goals>
           </execution>
-
-          <!-- BDD tests -->
-          <execution>
-            <id>bdd-tests</id>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-            <configuration>
-              <includes>
-                <include>**/*BDD.java</include>
-              </includes>
-              <systemPropertyVariables>
-                <persistence.unit>crsPU-test</persistence.unit>
-                <java.awt.headless>true</java.awt.headless>
-              </systemPropertyVariables>
-            </configuration>
-          </execution>
-
         </executions>
+      </plugin>
+
+
+      <plugin>
+        <groupId>org.pitest</groupId>
+        <artifactId>pitest-maven</artifactId>
+        <version>${pitest.version}</version>
+        <configuration>
+          <targetClasses>
+            <param>com.mycompany.courseregistrationsystem.*</param>
+          </targetClasses>
+          <targetTests>
+            <param>com.mycompany.courseregistrationsystem.*</param>
+          </targetTests>
+          <reportsDirectory>${project.build.directory}/pit-reports</reportsDirectory>
+          <junit4PluginVersion>0.15</junit4PluginVersion>
+        </configuration>
       </plugin>
     </plugins>
   </build>
+
+
+  <profiles>
+
+    <profile>
+      <id>unit-test</id>
+      <activation><activeByDefault>false</activeByDefault></activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.pitest</groupId>
+            <artifactId>pitest-maven</artifactId>
+            <version>${pitest.version}</version>
+            <executions>
+              <execution>
+                <id>pitest-run</id>
+                <phase>verify</phase>
+                <goals><goal>mutationCoverage</goal></goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- Integration / E2E / BDD (Failsafe) -->
+    <profile>
+      <id>integration-test</id>
+      <activation><activeByDefault>false</activeByDefault></activation>
+      <properties>
+        <db.server>mvn</db.server>
+        <persistence.unit>crsPU-test</persistence.unit>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <version>${failsafe.version}</version>
+            <executions>
+              <!-- ITs -->
+              <execution>
+                <id>integration-tests</id>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+                <configuration>
+                  <includes>
+                    <include>**/*IT.java</include>
+                  </includes>
+                  <systemPropertyVariables>
+                    <java.awt.headless>true</java.awt.headless>
+                    <persistence.unit>${persistence.unit}</persistence.unit>
+                  </systemPropertyVariables>
+                </configuration>
+              </execution>
+
+              <!-- E2E GUI -->
+              <execution>
+                <id>e2e-tests</id>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+                <configuration>
+                  <includes>
+                    <include>**/*E2E.java</include>
+                  </includes>
+                  <systemPropertyVariables>
+                    <java.awt.headless>false</java.awt.headless>
+                    <persistence.unit>${persistence.unit}</persistence.unit>
+                  </systemPropertyVariables>
+                </configuration>
+              </execution>
+
+              <!-- BDD -->
+              <execution>
+                <id>bdd-tests</id>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+                <configuration>
+                  <includes>
+                    <include>**/*BDD.java</include>
+                  </includes>
+                  <systemPropertyVariables>
+                    <java.awt.headless>true</java.awt.headless>
+                    <persistence.unit>${persistence.unit}</persistence.unit>
+                  </systemPropertyVariables>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>coveralls</id>
+      <activation><activeByDefault>false</activeByDefault></activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.eluder.coveralls</groupId>
+            <artifactId>coveralls-maven-plugin</artifactId>
+            <version>4.3.0</version>
+            <configuration>
+              <repoToken>${repoToken}</repoToken>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
