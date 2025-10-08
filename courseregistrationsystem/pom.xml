@@ -73,7 +73,6 @@
       <version>4.13.2</version>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
@@ -81,7 +80,7 @@
       <scope>test</scope>
     </dependency>
 
-
+    <!-- AssertJ Swing & Core -->
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-swing-junit</artifactId>
@@ -101,7 +100,6 @@
       <version>${awaitility-version}</version>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
@@ -183,7 +181,7 @@
         </executions>
       </plugin>
 
-
+      <!-- Unit tests (Surefire) -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -192,6 +190,8 @@
           <includes>
             <include>**/*Test.java</include>
           </includes>
+          <!-- helps AssertJ-Swing in CI -->
+          <useSystemClassLoader>false</useSystemClassLoader>
           <systemPropertyVariables>
             <persistence.unit>crsPU-test</persistence.unit>
             <java.awt.headless>false</java.awt.headless>
@@ -206,7 +206,7 @@
         <version>${failsafe.version}</version>
       </plugin>
 
-
+      <!-- JaCoCo  -->
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
@@ -223,28 +223,10 @@
         </executions>
       </plugin>
 
-
-      <plugin>
-        <groupId>org.pitest</groupId>
-        <artifactId>pitest-maven</artifactId>
-        <version>${pitest.version}</version>
-        <configuration>
-          <targetClasses>
-            <param>com.mycompany.courseregistrationsystem.*</param>
-          </targetClasses>
-          <targetTests>
-            <param>com.mycompany.courseregistrationsystem.*</param>
-          </targetTests>
-          <reportsDirectory>${project.build.directory}/pit-reports</reportsDirectory>
-          <junit4PluginVersion>0.15</junit4PluginVersion>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
 
-
   <profiles>
-
     <profile>
       <id>unit-test</id>
       <activation><activeByDefault>false</activeByDefault></activation>
@@ -254,6 +236,36 @@
             <groupId>org.pitest</groupId>
             <artifactId>pitest-maven</artifactId>
             <version>${pitest.version}</version>
+            <configuration>
+
+              <targetClasses>
+                <param>com.mycompany.courseregistrationsystem.controller.*</param>
+                <param>com.mycompany.courseregistrationsystem.repository.*</param>
+                <param>com.mycompany.courseregistrationsystem.model.*</param>
+                <param>com.mycompany.courseregistrationsystem.service.*</param>
+              </targetClasses>
+
+
+              <excludedClasses>
+                <param>com.mycompany.courseregistrationsystem.view.*</param>
+              </excludedClasses>
+
+
+              <excludedTestClasses>
+                <param>**/*IT*</param>
+                <param>**/*E2E*</param>
+                <param>**/*BDD*</param>
+                <param>com.mycompany.courseregistrationsystem.view.*</param>
+                <param>com.mycompany.courseregistrationsystem.CourseRegistrationAppE2E</param>
+              </excludedTestClasses>
+
+              <testPlugin>junit4</testPlugin>
+              <threads>2</threads>
+              <jvmArgs>
+                <jvmArg>-Djava.awt.headless=false</jvmArg>
+              </jvmArgs>
+              <reportsDirectory>${project.build.directory}/pit-reports</reportsDirectory>
+            </configuration>
             <executions>
               <execution>
                 <id>pitest-run</id>
@@ -266,7 +278,7 @@
       </build>
     </profile>
 
-    <!-- Integration / E2E / BDD (Failsafe) -->
+
     <profile>
       <id>integration-test</id>
       <activation><activeByDefault>false</activeByDefault></activation>
@@ -281,7 +293,7 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <version>${failsafe.version}</version>
             <executions>
-              <!-- ITs -->
+
               <execution>
                 <id>integration-tests</id>
                 <goals>
@@ -339,6 +351,7 @@
         </plugins>
       </build>
     </profile>
+
 
     <profile>
       <id>coveralls</id>
