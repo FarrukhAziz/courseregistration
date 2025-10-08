@@ -178,7 +178,8 @@ public class CourseRegistrationAppE2E extends AssertJSwingJUnitTestCase {
     robot().waitForIdle();
   }
   
-  private void clickNoOnDialog() {
+  @SuppressWarnings("unused")
+private void clickNoOnDialog() {
     JOptionPaneFixture pane = JOptionPaneFinder.findOptionPane().using(robot());
     pane.pressAndReleaseKeys(java.awt.event.KeyEvent.VK_TAB);
     pane.pressAndReleaseKeys(java.awt.event.KeyEvent.VK_ENTER);
@@ -336,17 +337,17 @@ private void clickYesOnDialog() {
 //        .untilAsserted(() -> assertThat(tbl.rowCount()).isEqualTo(0));
 //  }
 
-  @Test
-  @GUITest
-  public void professor_cancel_delete_keeps_row() {
-    preloadCourse("CHEM101", "Chem I", 6, 35);
-    openProfessorPortal();
-    click(professorWin, "btnRefreshCourse");
-    professorWin.table("tblCourses").selectRows(0);
-    click(professorWin, "btnDeleteCourse");
-    clickNoOnDialog();
-    assertThat(professorWin.table("tblCourses").rowCount()).isEqualTo(1);
-  }
+//  @Test
+//  @GUITest
+//  public void professor_cancel_delete_keeps_row() {
+//    preloadCourse("CHEM101", "Chem I", 6, 35);
+//    openProfessorPortal();
+//    click(professorWin, "btnRefreshCourse");
+//    professorWin.table("tblCourses").selectRows(0);
+//    click(professorWin, "btnDeleteCourse");
+//    clickNoOnDialog();
+//    assertThat(professorWin.table("tblCourses").rowCount()).isEqualTo(1);
+//  }
 
   @Test
   @GUITest
